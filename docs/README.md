@@ -107,6 +107,21 @@ been declared
     print(a) # 0
     conv_bin_to_image(fs.get(a).read())
     ```
+### Database schema
+The schema looks as follows:
+![DB schema image](images/db_schema.png)
+Here are some design decisions that lead to this schema:
+- We implemented a `ressource_context` collection, because we 
+wanted to group ressources together without having to create a new
+database every time we create a new group of resources 
+(e.g. training images for face recognition, training videos for face 
+recognition, ...).
+- We created a lot of references going out from the `user`, because the 
+implementation needs to load every user in order to check whether a certain
+`username` or `_id` has already been taken. While doing this we don't want
+to also load the resources.
+- We also decided to use a `success_res_type` in the collection 
+`login_attempt` to destinguish between video or picture login.
 
 ## Tool stack
 - Programming language: [Python](https://docs.python.org/3/)
