@@ -14,30 +14,6 @@ can Import and Export Pictures from Database
 @Last modified by:   Julian FLieller
 @Last modified time: 2023-05-19
 
-<a id="DatabaseManagement.np"></a>
-
-## np
-
-<a id="DatabaseManagement.pickle"></a>
-
-## pickle
-
-<a id="DatabaseManagement.uuid"></a>
-
-## uuid
-
-<a id="DatabaseManagement.dt"></a>
-
-## dt
-
-<a id="DatabaseManagement.timezone"></a>
-
-## timezone
-
-<a id="DatabaseManagement.pymongo"></a>
-
-## pymongo
-
 <a id="DatabaseManagement.BBDB"></a>
 
 ## BBDB Objects
@@ -403,21 +379,5 @@ def __init__(dbhost: str = None)
 
 ```python
 class UsernameExists(Exception)
-```
-
-<a id="DatabaseManagement.makeSuperAdmin"></a>
-
-#### makeSuperAdmin
-
-```python
-def makeSuperAdmin(name)
-```
-
-<a id="DatabaseManagement.delThisUser"></a>
-
-#### delThisUser
-
-```python
-def delThisUser(name)
 ```
 
