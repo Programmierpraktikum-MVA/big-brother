@@ -4,25 +4,20 @@ The comments, code and documentation is written in english. We only use german
 if there isn't any other way.
 
 # Get Started
-
 ## Get project
-1) Setup ssh-key.
-2) Clone repository into your local folder (`git clone <ssh-url>`)
+1. Setup ssh-key.
+2. Clone repository into your local folder (`git clone <ssh-url>`)
+3. Read our contribution guidelines [here](#contribution-guidelines)
 
 ## Check for changes in your cloned or existing Project 
-1) check for any changes (`git status`)
-2) pull changes to your local repository (`git pull`)
+1. check for any changes (`git status`)
+2. pull changes to your local repository (`git pull`)
 
 ## Making changes
-1) add all files (`git add .`) add specific file (`git add <filename.xy>`)
-2) commit changes and add a comment (`git commit -m "I changed xyz"`)
-3) push it to github (`git push`) If its the first push try: 
+1. add all files (`git add .`) add specific file (`git add <filename.xy>`)
+2. commit changes and add a comment (`git commit -m "I changed xyz"`)
+3. push it to github (`git push`) If its the first push try: 
 (`git push -u origin master`)
-
-# Project working structure
-- Every team works on a branch
-- Respective team-leaders decide when to merge those branches and resolve 
-the conflicts
 
 # Documentation
 We have a documentation in the [doc](doc/)-folder. You can find some
@@ -66,18 +61,22 @@ supervisors), but optional for everyone else.
 
 ## Branching
 Troughout the project the main branch should always be deployable. Therefore
-it's not allowed to push to the main branch. If you want a branch to be merged,
-tell your supervisor. They will make sure that the changes are properly 
-reviewed and then merge the branch into main. If a supervisor assigns a task
-to you then it should be somehow indicated either which branch should be used
-or the branch is already created. 
-
-Supervisors should make sure that code that
-gets modified for an issue (at the same time) has a minimal amount of 
-collision. This makes merging less painful.
+it's not allowed to push to the main branch. Supervisors should make sure 
+that code that gets modified for an issue (at the same time) has a minimal 
+amount of collision. This makes merging less painful. If a supervisor 
+assigns a task to you then it should be somehow indicated either which 
+branch should be used or the branch is already created. 
 
 __Note__: Unfortunately I couldn't setup the protection of the main branch 
 or rather it's enforcement. Otherwise we would need to go public or upgrade our 
 organization subscription. Since we might store sensitive information in our
 repository or database (and might not be aware of some security threads) 
 we wouldn't others to access the code.
+
+## Pull requests
+If you want a branch to be merged, tell your supervisor. They will make 
+sure that the changes are properly reviewed and then merge the branch 
+into main (or another branch). In order to do it assign pull request to
+your supervisor and set the other parameters of the pull request accordingly.
+After the branch has been pulled the supervisor might decide to delete the
+branch that has been pulled.
