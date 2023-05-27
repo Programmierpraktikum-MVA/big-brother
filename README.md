@@ -20,7 +20,7 @@ if there isn't any other way.
 (`git push -u origin master`)
 
 # Documentation
-We have a documentation in the [doc](doc/)-folder. You can find some
+We have a documentation in the [docs](docs/)-folder. You can find some
 information that help you understand the code better in the documentation.
 
 # Organizational structure
