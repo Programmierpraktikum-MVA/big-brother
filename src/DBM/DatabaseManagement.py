@@ -8,7 +8,7 @@ can Import and Export Pictures from Database
 @Project: ODS-Praktikum-Big-Brother
 @Filename: new_database_management.py
 @Last modified by:   Julian Flieller
-@Last modified time: 2023-05-29
+@Last modified time: 2023-05-31
 """
 import numpy as np
 import pickle
@@ -104,7 +104,7 @@ class BBDB:
                 "date" : localTime,
                 "login_suc": False, #initially False; set to True if update_login() successfull
                 "success_resp_type": None, #initially None; set to int if update_login() successfull
-                "success_res_id": uuid.uuid1(),
+                "success_res_id": None, #initially None; set to uuid if update_login() successfull
                 })
             return localTime
         print("WARNING: Database Login Failed!")
@@ -119,7 +119,7 @@ class BBDB:
         time -- The timestamp of the login you want to update. 
         success_res_id -- the uui for the res in the resource table
         """
-        user_id = time = inserted_pic_uuid = None
+        user_id = time = res = success_resp_type = None
         
         for key, value in kwargs.items():
             if key == "user_id":
@@ -128,31 +128,40 @@ class BBDB:
                 time = value
             elif key == "success_res_id":
                 success_res_id = value
+            elif key == "success_resp_type":
+                success_resp_type = value
+            elif key == "res":
+                res = value
         
-        if not time or not inserted_pic_uuid or not user_id:
+        if not time or not res or not user_id or not success_resp_type:
             print("WARNING: Database Login Failed!")
             return False,False
         
-        self.login_attempt.update_one(
-            {
-                "user_id" : user_id,
-                "date"      : time
-            },
-            { "$set" : {
-                "success_res_id" : success_res_id,
-                "login_suc":True,
-                "success_resp_type":int(""),#TODO
-                }
-             })
-        
-        #TODO -> save the res in the resource table
-        '''
-        self.resource.insert_one({"user_id" : user_id,
-                        "date" : localTime,
-                        "res": "" #will be inserted in @update_login
-                        })
-        '''
-        return True
+        try:
+            self.login_attempt.update_one(
+                {
+                    "user_id" : user_id,
+                    "date"      : time
+                },
+                { "$set" : {
+                    "login_suc":True,
+                    "success_resp_type":success_resp_type,
+                    "success_res_id": success_res_id,
+                    }
+                })
+            
+            self.resource.insert_one(
+                {
+                    "_id": success_res_id,
+                    "user_id" : user_id,
+                    "date" : time,
+                    "res": pickle.dumps(res)
+                })
+
+            return True
+        except Exception:
+            print("WARNING: Database Login Update!")
+            return False,False
 
     def register_user(self,username:str):
         """
