@@ -102,15 +102,13 @@ class BBDB:
             self.login_attempt.insert_one({
                 "user_id" : user_id,
                 "date" : localTime,
-                "login_suc": "",#TODO
-                "success_resp_type":int(""),#TODO
-                "success_res":"",#TODO
+                "login_suc": False, #initially False; set to True if update_login() successfull
+                "success_resp_type": None, #initially None; set to int if update_login() successfull
+                "success_res_id": uuid.uuid1(),
                 })
-
             return localTime
-        #TODO let me know what to retrun as an error
         print("WARNING: Database Login Failed!")
-        return False
+        return False,False
         
     def update_login(self, **kwargs):
         """
@@ -119,7 +117,7 @@ class BBDB:
         Keyword arguments:
         user_id -- ID of the user of which you want to log in.
         time -- The timestamp of the login you want to update. 
-        success_res -- the uui for the res in the resource table
+        success_res_id -- the uui for the res in the resource table
         """
         user_id = time = inserted_pic_uuid = None
         
@@ -128,8 +126,8 @@ class BBDB:
                 user_id = value
             elif key == "time":
                 time = value
-            elif key == "success_res":
-                success_res = value
+            elif key == "success_res_id":
+                success_res_id = value
         
         if not time or not inserted_pic_uuid or not user_id:
             print("WARNING: Database Login Failed!")
@@ -141,11 +139,19 @@ class BBDB:
                 "date"      : time
             },
             { "$set" : {
-                "success_res" : success_res,
-                "login_suc":"",#TODO
+                "success_res_id" : success_res_id,
+                "login_suc":True,
                 "success_resp_type":int(""),#TODO
                 }
              })
+        
+        #TODO -> save the res in the resource table
+        '''
+        self.resource.insert_one({"user_id" : user_id,
+                        "date" : localTime,
+                        "res": "" #will be inserted in @update_login
+                        })
+        '''
         return True
 
     def register_user(self,username:str):
@@ -332,15 +338,20 @@ class BBDB:
         # TODO: was not implemented yet
         raise NotImplementedError
 
+class wire_DB(BBDB):
+    # TODO: Discuss. REMOVEABLE?
+    def __init__(self):
+        BBDB.__init__(self)
+
 class opencv_DB(BBDB):
     # TODO: Discuss. REMOVEABLE? -> lmk
-    def __init__(self,dbhost:str=None):
+    def __init__(self):
         BBDB.__init__(self)
 
 
 class frontend_DB(BBDB):
     # TODO: Discuss. REMOVEABLE? -> lmk
-    def __init__(self,dbhost:str=None):
+    def __init__(self):
         BBDB.__init__(self)
 
 
