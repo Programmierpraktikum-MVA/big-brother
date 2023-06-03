@@ -15,12 +15,13 @@ import pickle
 import uuid
 import datetime as dt
 from pytz import timezone
+import bigbrother.app.user as User
 import pymongo
 
 class BBDB:
     """Database Baseclass
     Subclasses like wire_DB inherit methods and variables
-    This is done to reduce Code and to Unify the usage of the Database""" 
+    This is done to reduce Code and to Unify the usage of the Database"""
     # I kinda dont get why as it only creates more overhead, 
     # since it only creates a new instance of BDBB
 
@@ -79,7 +80,7 @@ class BBDB:
 
         if user_uuid and not username:
             self.user_table.delete_one({"user_uuid":user_uuid})
-            return True 
+            return True
         elif username and not user_uuid:
             self.user_table.delete_one({"username":username})
             return True
@@ -87,7 +88,7 @@ class BBDB:
             print("WARNING: Database Login Failed!")
             return False
 
-    def addAdminRelation(self, admin_uuid, child_uuid): 
+    def addAdminRelation(self, admin_uuid, child_uuid):
         """
         Add a user as an admin.
 
@@ -142,13 +143,13 @@ class BBDB:
                 username = value
 
         if user_uuid and not username:
-            username = self.user_table.find_one({"user_uuid":user_uuid})["username"] 
+            username = self.user_table.find_one({"user_uuid":user_uuid})["username"]
         elif username and not user_uuid:
             user_uuid = self.user_table.find_one({"username":username})["user_uuid"]
         else:
             print("WARNING: Database Login Failed!")
             return False,False # TODO: why return False twice?
-        
+
         localTime = dt.datetime.now(tz=timezone('Europe/Amsterdam'))
         self.login_table.insert_one({
             "user_uuid" : user_uuid,
@@ -159,7 +160,7 @@ class BBDB:
             })
 
         return localTime
-        
+
     def update_login(self, **kwargs):
         """
         Updates the status of the login of one user with a certain 
@@ -175,7 +176,7 @@ class BBDB:
         # TODO: Why can you only pass either user_id or username?
         # TODO: Only use one identifier. For the API.
         user_uuid = username = time = inserted_pic_uuid = None
-        
+
         for key, value in kwargs.items():
             if key == "user_uuid":
                 user_uuid = value
@@ -185,9 +186,9 @@ class BBDB:
                 time = value
             elif key == "inserted_pic_uuid":
                 inserted_pic_uuid = value
-        
+
         if user_uuid and not username:
-            username = self.user_table.find_one({"user_uuid":user_uuid})["username"] 
+            username = self.user_table.find_one({"user_uuid":user_uuid})["username"]
         elif username and not user_uuid:
             user_uuid = self.user_table.find_one({"username":username})["user_uuid"]
         else:
@@ -197,11 +198,11 @@ class BBDB:
         if not time or not inserted_pic_uuid:
             print("WARNING: Database Login Failed!")
             return False,False
-        
+
         self.login_table.update_one(
             {
                 "user_uuid" : user_uuid,
-                "username"  : username, 
+                "username"  : username,
                 "date"      : time
             },
             { "$set" : {
@@ -238,7 +239,7 @@ class BBDB:
             raise UsernameExists("Username in use!")
         else:
             self.user_table.insert_one({
-                "username" : username, 
+                "username" : username,
                 "user_uuid" : new_uuid,
                 "is_admin" : False})
             return new_uuid
@@ -266,8 +267,8 @@ class BBDB:
         for user in users:
             user_dict[user["user_uuid"]] = user["username"]
         return user_dict
-            
-    def getUserWithId(self, user_uuid): 
+
+    def getUserWithId(self, user_uuid):
         """
         Returns the username corresponding to the user_uuid.
 
@@ -281,7 +282,7 @@ class BBDB:
         # TODO: REMOVEABLE
         # TODO: It might make the code cleaner to leave it there.
         user_entry = self.user_table.find_one({"user_uuid" : user_uuid})
-        if user_entry is None: 
+        if user_entry is None:
             return None
         return user_entry["username"]
 
@@ -319,7 +320,7 @@ class BBDB:
         doesn't exist then it returns None.
         """
         user_entry = self.user_table.find_one({"username" : username})
-        if user_entry is None: 
+        if user_entry is None:
             return None
         return user_entry["user_uuid"]
 
@@ -334,7 +335,7 @@ class BBDB:
 
         # TODO: Error Handling, in the rare case that a duplicate 
         # uuid is generated this method has to try again
-        
+
         raise NotImplementedError
 
     def getPicture(self,query : str):
@@ -378,7 +379,7 @@ class wire_DB(BBDB):
         # TODO: Only commented out for testing purposes
         #if type(pic) != np.ndarray or type(user_uuid) != uuid.UUID:
         #    raise TypeError
-        
+
         # TODO: Make sure pic_uuid is unique?
         pic_uuid = str(uuid.uuid1())
         self.wire_train_pictures.insert_one({
@@ -387,27 +388,27 @@ class wire_DB(BBDB):
             "pic_uuid" : pic_uuid})
         return pic_uuid
 
-    def getTrainingPictures(self, where : str):
+    def getTrainingPictures(self, where: str) -> ([], []):
         """
         Returns training pictures from the database with the given where clause
         """
-        # TODO: Discuss. Change the logic of this function, because the 
-        # is hard to parse.
-        # TODO: This code is likely not to be correct. Change this code!
-        pics,uuids = [],[]
-        where = where.replace(" ","") #removes all whitespaces to have a cleaner format to work with
-        if "where" == "*":
+        # TODO: Discuss. Change the logic of this function, because its hard to parse.
+        # TODO: This code is likely not correct. Change this code!
+
+        pics, uuids = [], []
+        where = where.replace(" ", "") #removes all whitespaces to have a cleaner format to work with
+        if where == "*":
             for pic in self.wire_train_pictures.find():
                 pics.append(pickle.loads(pic["pic_data"]))
                 uuids.append(pic["pic_uuid"])
         else:
             pass
-            #assuming that where is always of the format """WHERE 'name' = 'John Doe' """
+            #assuming that where is always of the format "WHERE 'name' = 'John Doe'"
             #self.wire_train_pictures.find({"name":where.split("='")[1].split("'")[0]})
             #pics.append(pickle.loads(pic["pic_data"]))
             #uuids.append(pic["pic_uuid"])
-        
-        return pics,uuids
+
+        return pics, uuids
 
     def getAllTrainingsImages(self):
         """
@@ -444,10 +445,18 @@ def delThisUser(name):
     # TODO: Discuss. Remove.
     raise NotImplementedError
 
-"""
+#"""
 # TODO: only for testing, remove in production
 if __name__ == '__main__':
-    DB = BBDB()
-    DB.register_user("mike")
-    print(list(DB.user_table.find()))
-"""
+    #DB = BBDB()
+    #DB.register_user("mike")
+    #print(list(DB.user_table.find()))
+
+    print("LMAO")
+    #wireDB = wire_DB()
+    #user = User.BigBrotherUser("0", "name", wireDB)
+
+    #pics, uuids = wireDB.getTrainingPictures("*")
+    #print(pics)
+    #print(uuids)
+#"""
