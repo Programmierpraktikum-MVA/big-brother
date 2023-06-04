@@ -10,9 +10,7 @@ import DatabaseManagement
 import uuid
 import bson
 
-DB = DatabaseManagement.wire_DB('h2938366.stratoserver.net')
-
-
+DB = DatabaseManagement.wire_DB()
 
 print("start")
 
@@ -39,7 +37,7 @@ for img_str in sorted(img_str_list):
     print("test2")
 
     try:
-        user_uuid = DB.register_user("jonny_sins")
+        user_uuid = DB.register_user("jonny_sins", "user_enc_res_id")
         print("Created User: {} with uuid: {}".format(img_str[0:2], user_uuid))
     except DatabaseManagement.UsernameExists:
         users = DB.getUsers()
@@ -58,7 +56,8 @@ for img_str in sorted(img_str_list):
     user_uuid_binary = bson.Binary.from_uuid(user_uuid)
 
     print("test4")
-    pic_uuid = DB.insertTrainingPicture(image, user_uuid_binary)
+    # NotImplementedError
+    pic_uuid = DB.insertPicture(image, user_uuid_binary)
     print("inserted: {}\nwith uuid: {}\nand user uuid: {}\n\n\n".format(img_str, pic_uuid, user_uuid))
 
 DB.closeGraceful()
