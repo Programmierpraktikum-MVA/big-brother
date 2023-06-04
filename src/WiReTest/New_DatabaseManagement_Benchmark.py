@@ -35,8 +35,11 @@ class BenchmarkApp(tk.Tk):
         try:
             iterations = int(self.entry.get())
             self.button.configure(state=tk.DISABLED)
+            self.label_wait = tk.Label(self, text="Please wait...")
+            self.label_wait.pack()
             self.run_iterations(iterations)
             self.button.configure(state=tk.NORMAL)
+            self.label_wait.destroy()
         except ValueError:
             messagebox.showerror("Error", "Invalid input! Please enter a number.")
 
