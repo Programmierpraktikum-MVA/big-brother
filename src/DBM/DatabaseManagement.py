@@ -50,7 +50,13 @@ class BBDB:
 
     def delUser(self,user_id)-> bool:
         """
-        Delete a user from the database with the given user_id
+        Delete a user from the database.
+
+        Arguments:
+        user_id -- ID of the user that you want to delete.
+
+        Return:
+        Returns True if the user has been deleted and False otherwise.
         """
         if self.user.find_one({"_id":user_id}):
             self.user.delete_one({"_id":user_id})
@@ -60,7 +66,13 @@ class BBDB:
 
     def addAdminRelation(self, user_id): 
         """
-        Add a user as an admin with the given user_id
+        Add a user as an admin.
+
+        Arguments:
+        user_id -- ID of the user you want to add to add as admin
+        
+        Return:
+        Returns True if the user has been added and False otherwise.
         """
         if self.user.find_one({"_id":user_id}):
             self.user.update_one({"_id":user_id},{"$set":{"is_admin":True}})
@@ -88,6 +100,10 @@ class BBDB:
     def login_user(self, user_id):
         """
         Creates a new entry in the login_table for the user with the given uuid or username.
+
+        Arguments: 
+        user_id -- ID of the user that you want to delete. Only set either 
+        user_id or username.
 
         Return:  
         Returns (False,False) if the login fails and the timestamp of the
@@ -267,11 +283,11 @@ class BBDB:
         Inserts a new training picture into the database and returns the 
         uuid of the inserted picture.
 
-        Arguments:  
+        Arguments:
         pic       -- Picture to be inserted into the database.
         user_uuid -- ID of the user which owns the picture.
 
-        Return:  
+        Return:
         Returns the uuid of the picture that has been inserted into the database.
 
         Exception:
