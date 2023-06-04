@@ -323,7 +323,8 @@ class wire_DB(BBDB):
             self.resource_context.insert_one({"_id":uuid.uuid1(),"name":"wire","username":None,"res_id":[]})
         
         pics = []
-        for resource in self.resource_context.find({"name":"wire"})["res_id"]:
+        for resource_id in self.resource_context.find({"name":"wire"})["res_id"]:
+            resource = self.resource.find_one({"_id":resource_id})
             pics.append(pickle.loads(resource["res"]))
 
         return pics
