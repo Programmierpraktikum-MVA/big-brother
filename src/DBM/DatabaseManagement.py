@@ -38,26 +38,22 @@ class BBDB:
     
     def closeGraceful(self):
         """
-        Should be called everytime the Program Shuts down
+        not needed for mongodb
         """
-        # TODO: Take a look at the use-case of this function. How should it
-        # differ from the close-function -> I think it doesnt for mongodb
         self.close()
 
     def commit(self):
         """
         not needed for mongodb
         """
-        # TODO: Talk about it. This might be used somewhere in order
-        # to "take back" some entries. -> wdym?
         return
 
     def delUser(self,user_id)-> bool:
         """
         Delete a user from the database with the given user_id
         """
-        if self.user.find_one({"user_enc_res_id":user_id}):
-            self.user.delete_one({"user_enc_res_id":user_id})
+        if self.user.find_one({"_id":user_id}):
+            self.user.delete_one({"_id":user_id})
             return True 
         print("WARNING: Database Login Failed!")
         return False
@@ -66,8 +62,8 @@ class BBDB:
         """
         Add a user as an admin with the given user_id
         """
-        if self.user.find_one({"user_enc_res_id":user_id}):
-            self.user.update_one({"user_enc_res_id":user_id},{"$set":{"is_admin":True}})
+        if self.user.find_one({"_id":user_id}):
+            self.user.update_one({"_id":user_id},{"$set":{"is_admin":True}})
             return True
         print("WARNING: AddAdminRelation Failed!")
         return False
@@ -77,16 +73,16 @@ class BBDB:
         Fetches usernames from database belonging to the given uuids
 
         Arguments:  
-        user_enc_res_id -- This is a list of user_uuid. Those are the uuids of which you want to get the usernames.
+        uuids -- This is a list of user_uuid. Those are the uuids of which you want to get the usernames.
 
         Return:  
         Returns the a list of usernames that correspond to the user_uuid 
         that have been inputted. The index i of the return list corresponds
-        to user_enc_res_id[i] in the input.
+        to uuids[i] in the input.
         """
         usernames = []
-        for user_enc_res_id in uuids:
-            usernames.append(self.user.find_one({"user_enc_res_id":user_enc_res_id})["username"])
+        for user_id in uuids:
+            usernames.append(self.user.find_one({"_id":user_id})["username"])
         return usernames
 
     def login_user(self, user_id):
@@ -98,7 +94,7 @@ class BBDB:
         login if it succeeds.
         """
         localTime = dt.datetime.now(tz=timezone('Europe/Amsterdam'))
-        if self.user.find_one({"user_enc_res_id":user_id}):
+        if self.user.find_one({"_id":user_id}):
             self.login_attempt.insert_one({
                 "user_id" : user_id,
                 "date" : localTime,
@@ -112,28 +108,33 @@ class BBDB:
         
     def update_login(self, **kwargs):
         """
-        Updates the status of the login of one user with the given user_id
+        Updates the status of the login of one user with the given user_uuid
 
         Keyword arguments:
-        user_id -- ID of the user of which you want to log in.
+        user_uuid -- ID of the user of which you want to log in.
         time -- The timestamp of the login you want to update. 
-        success_res_id -- the uui for the res in the resource table
+        inserted_pic_uuid -- the uuid for the res in the resource table
         """
-        user_id = time = res = success_resp_type = None
+        user_id = time = inserted_pic_uuid = None
         
         for key, value in kwargs.items():
-            if key == "user_id":
+            if key == "user_uuid":
                 user_id = value
             elif key == "time":
                 time = value
+            elif key == "inserted_pic_uuid":
+                inserted_pic_uuid = value
+            
+            '''
             elif key == "success_res_id":
                 success_res_id = value
             elif key == "success_resp_type":
                 success_resp_type = value
             elif key == "res":
                 res = value
+            '''
         
-        if not time or not res or not user_id or not success_resp_type:
+        if not time or not inserted_pic_uuid or not user_id:
             print("WARNING: Database Login Failed!")
             return False,False
         
@@ -144,31 +145,24 @@ class BBDB:
                     "date"      : time
                 },
                 { "$set" : {
-                    "login_suc":True,
-                    "success_resp_type":success_resp_type,
-                    "success_res_id": success_res_id,
+                    "login_suc": True,
+                    "success_resp_type": 0,
+                    "inserted_pic_uuid": inserted_pic_uuid,
                     }
                 })
             
-            self.resource.insert_one(
-                {
-                    "_id": success_res_id,
-                    "user_id" : user_id,
-                    "date" : time,
-                    "res": pickle.dumps(res)
-                })
-
-            return True
+            return inserted_pic_uuid
         except Exception:
             print("WARNING: Database Login Update!")
             return False,False
 
-    def register_user(self,username:str):
+    def register_user(self,username:str,user_enc_res_id):
         """
         Creates a new user in the database with the given username.
 
         Arguments:  
         username -- The username of the new user.
+        user_enc_res_id -- user_enc_res_id of the user (identifier from opencv)
 
         Return:  
         If the user has been successfully registered then it returns the
@@ -187,8 +181,9 @@ class BBDB:
             raise UsernameExists("Username in use!")
         else:
             self.user.insert_one({
+                "_id": new_uuid,
                 "username" : username, 
-                "user_enc_res_id" : new_uuid,
+                "user_enc_res_id" : user_enc_res_id,
                 "is_admin" : False})
             return new_uuid
 
@@ -213,7 +208,7 @@ class BBDB:
 
         user_dict = {}
         for user in users:
-            user_dict[user["user_enc_res_id"]] = user["username"]
+            user_dict[user["_id"]] = user["username"]
         return user_dict
             
     def getUserWithId(self, user_id): 
@@ -221,13 +216,13 @@ class BBDB:
         Returns the username corresponding to the user_id.
 
         Arguments:
-        user_id -- The user_enc_res_id.
+        user_id -- The user_id aka _id.
 
         Return:  
         Returns the username corresponding to the user_id. If the user with the
         given ID doesn't exist then None gets returned.
         """
-        user_entry = self.user.find_one({"user_enc_res_id" : user_id})
+        user_entry = self.user.find_one({"_id" : user_id})
         if user_entry is None: 
             return None
         return user_entry["username"]
@@ -243,11 +238,10 @@ class BBDB:
         Returns True if the user has been successfully deleted. And 
         False otherwise (e.g. user didn't exist in the database).
         """
-        if self.user.find_one({"user_enc_res_id" : user_id}):
+        if self.user.find_one({"_id" : user_id}):
             self.delUser(user_id)
-            self.login_attempt.delete_many({"user_id" : user_id}) #delete corresponding data as requested
-            self.resource.delete_many({"user_id" : user_id}) #delete corresponding data as requested
-            #TODO not sure what to do with resource_context though
+            self.login_attempt.delete_many({"user_id" : user_id}) 
+            self.resource.delete_many({"user_id" : user_id})
             return True
         else:
             return False
@@ -266,7 +260,7 @@ class BBDB:
         user_entry = self.user.find_one({"username" : username})
         if user_entry is None: 
             return None
-        return user_entry["user_enc_res_id"]
+        return user_entry["_id"]
     
     def insertTrainingPicture(self, pic:np.ndarray, user_uuid:uuid.UUID):
         """
@@ -348,18 +342,15 @@ class BBDB:
         raise NotImplementedError
 
 class wire_DB(BBDB):
-    # TODO: Discuss. REMOVEABLE?
     def __init__(self):
         BBDB.__init__(self)
 
 class opencv_DB(BBDB):
-    # TODO: Discuss. REMOVEABLE? -> lmk
     def __init__(self):
         BBDB.__init__(self)
 
 
 class frontend_DB(BBDB):
-    # TODO: Discuss. REMOVEABLE? -> lmk
     def __init__(self):
         BBDB.__init__(self)
 
