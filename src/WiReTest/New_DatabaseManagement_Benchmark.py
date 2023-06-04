@@ -16,10 +16,10 @@ class BenchmarkApp(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
 
-        self.title("Benchmark Program")
-        self.geometry("300x200")
+        self.title("DatabaseManagement Benchmark Program")
+        self.geometry("500x350")
 
-        self.label = tk.Label(self, text="Enter the number of iterations:")
+        self.label = tk.Label(self, text="Enter the number of iterations (1 iteration = 10 users registered):")
         self.label.pack()
 
         self.entry = tk.Entry(self)
