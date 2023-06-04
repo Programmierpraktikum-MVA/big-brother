@@ -7,6 +7,7 @@ import pandas as pd
 import numpy as np
 import sys
 import os
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'DBM'))
 from DatabaseManagement import BBDB
 
@@ -40,6 +41,7 @@ class BenchmarkApp(tk.Tk):
             messagebox.showerror("Error", "Invalid input! Please enter a number.")
 
     def run_iterations(self, iterations):
+        total_execution_time = 0
         results = []
         self.progressbar["maximum"] = iterations
         self.progressbar["value"] = 0
@@ -48,18 +50,26 @@ class BenchmarkApp(tk.Tk):
             start_time = time.time()
 
             # Run code here and measure the execution time
-            result = self.run_code()
+            execution_time = self.run_code()
 
             end_time = time.time()
-            execution_time = end_time - start_time
+            iteration_execution_time = end_time - start_time
+            total_execution_time += iteration_execution_time
 
-            results.append((i + 1, execution_time, result))
+            results.append((i + 1, iteration_execution_time))
 
             self.progressbar["value"] = i + 1
             self.update_idletasks()
 
         # Convert the results to a pandas DataFrame
-        df = pd.DataFrame(results, columns=["Iteration", "Execution Time", "Result"])
+        df = pd.DataFrame(results, columns=["Iteration", "Execution Time"])
+
+        # Add total execution time to the dataframe
+        df.loc["Total"] = ["", total_execution_time]
+
+        # Specify time unit (seconds)
+        df["Execution Time"] = df["Execution Time"].apply(lambda x: f"{x:.6f} s")
+
         messagebox.showinfo("Benchmark Results", df.to_string(index=False))
 
     def run_code(self):
@@ -68,6 +78,11 @@ class BenchmarkApp(tk.Tk):
 
         # Example database operations
         start_time = time.time()
+
+        # Delete existing users (uncomment if error "Username already in use!" appears)
+        #existing_users = db.getUsers()
+        #for user_id in existing_users:
+        #    db.delUser(user_id)
 
         # Register multiple users
         user_ids = []
@@ -80,9 +95,6 @@ class BenchmarkApp(tk.Tk):
         # Add admin relation for each user
         for user_id in user_ids:
             db.addAdminRelation(user_id)
-
-        # Get usernames for all users
-        usernames = db.get_username(user_ids)
 
         # Delete all users
         for user_id in user_ids:
