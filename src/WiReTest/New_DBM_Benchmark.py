@@ -19,7 +19,7 @@ class BenchmarkApp(tk.Tk):
         self.title("DatabaseManagement Benchmark Program")
         self.geometry("500x350")
 
-        self.label_iterations = tk.Label(self, text="Enter the number of iterations (1 iteration = 10 users registered):")
+        self.label_iterations = tk.Label(self, text="Enter the number of iterations:")
         self.label_iterations.pack()
 
         self.entry_iterations = tk.Entry(self)
