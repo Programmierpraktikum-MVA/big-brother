@@ -63,23 +63,35 @@ class BenchmarkApp(tk.Tk):
         messagebox.showinfo("Benchmark Results", df.to_string(index=False))
 
     def run_code(self):
-        # Instantiate the BBDB class and perform some database operations
+        # Instantiate the BBDB class and perform database operations
         db = BBDB()
 
         # Example database operations
-        user_id = db.register_user("username", "user_enc_res_id")
-        db.addAdminRelation(user_id)
-        usernames = db.get_username([user_id])
-        db.delUser(user_id)
+        start_time = time.time()
 
-        # Generate some random data using numpy
-        data = np.random.randn(1000, 10)
+        # Register multiple users
+        user_ids = []
+        for i in range(10):
+            username = f"username{i + 1}"
+            user_enc_res_id = f"user_enc_res_id{i + 1}"
+            user_id = db.register_user(username, user_enc_res_id)
+            user_ids.append(user_id)
 
-        # Perform some calculations using sklearn
-        b = Bunch(data=data, target=np.arange(1000))
-        mean_values = np.mean(b.data, axis=0)
+        # Add admin relation for each user
+        for user_id in user_ids:
+            db.addAdminRelation(user_id)
 
-        return mean_values
+        # Get usernames for all users
+        usernames = db.get_username(user_ids)
+
+        # Delete all users
+        for user_id in user_ids:
+            db.delUser(user_id)
+
+        end_time = time.time()
+        execution_time = end_time - start_time
+
+        return execution_time
 
 
 if __name__ == "__main__":
