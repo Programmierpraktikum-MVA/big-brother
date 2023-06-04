@@ -262,54 +262,6 @@ class BBDB:
             return None
         return user_entry["_id"]
     
-    def insertTrainingPicture(self, pic:np.ndarray, user_uuid:uuid.UUID):
-        """
-        Inserts a new training picture into the database and returns the 
-        uuid of the inserted picture.
-
-        Arguments:  
-        pic       -- Picture to be inserted into the database.
-        user_uuid -- ID of the user which owns the picture.
-
-        Return:  
-        Returns the uuid of the picture that has been inserted into the database.
-
-        Exception:
-        TypeError -- Gets risen if the type of the input isn't the expected type.
-        """
-        # TODO: Only commented out for testing purposes
-        #if type(pic) != np.ndarray or type(user_uuid) != uuid.UUID:
-        #    raise TypeError
-        
-        # TODO: Make sure pic_uuid is unique?
-        pic_uuid = str(uuid.uuid1())
-        self.wire_train_pictures.insert_one({
-            "user_uuid" : user_uuid,
-            "pic_data" : pickle.dumps(pic),
-            "pic_uuid" : pic_uuid})
-        return pic_uuid
-
-    def getTrainingPictures(self, where : str):
-        """
-        Returns training pictures from the database with the given where clause
-        """
-        # TODO: Discuss. Change the logic of this function, because the 
-        # is hard to parse.
-        # TODO: This code is likely not to be correct. Change this code!
-        pics,uuids = [],[]
-        where = where.replace(" ","") #removes all whitespaces to have a cleaner format to work with
-        if "where" == "*":
-            for pic in self.wire_train_pictures.find():
-                pics.append(pickle.loads(pic["pic_data"]))
-                uuids.append(pic["pic_uuid"])
-        else:
-            pass
-            #assuming that where is always of the format """WHERE 'name' = 'John Doe' """
-            #self.wire_train_pictures.find({"name":where.split("='")[1].split("'")[0]})
-            #pics.append(pickle.loads(pic["pic_data"]))
-            #uuids.append(pic["pic_uuid"])
-        
-        return pics,uuids
 
     def getAllTrainingsImages(self):
         """
@@ -344,6 +296,69 @@ class BBDB:
 class wire_DB(BBDB):
     def __init__(self):
         BBDB.__init__(self)
+
+    def getTrainingPictures(self, **kwargs):
+        """
+        Returns training pictures from the database from the wire resource context
+        """
+
+        #TODO not needed if only "wire" resource context is needed here
+        '''
+        username = None
+
+        for key, value in kwargs.items():
+            if key == "user_uuid":
+                user_uuid = value
+            elif key == "username":
+                username = value
+        
+        if user_uuid and not username:
+            username = self.user.find_one({"user_uuid":user_uuid})["username"] 
+
+        if not username:
+            print("WARNING: Database Login Failed!")
+            return None, None
+        '''
+        if not self.resource_context.find({"name":"wire"}):
+            self.resource_context.insert_one({"_id":uuid.uuid1(),"name":"wire","username":None,"res_id":[]})
+        
+        pics = []
+        for resource in self.resource_context.find({"name":"wire"})["res_id"]:
+            pics.append(pickle.loads(resource["res"]))
+
+        return pics
+    
+    def insertTrainingPicture(self, pic:np.ndarray, user_uuid:uuid.UUID):
+        """
+        Inserts a new training picture into the database and returns the 
+        uuid of the inserted picture.
+
+        Arguments:  
+        pic       -- Picture to be inserted into the database.
+        user_uuid -- ID of the user which owns the picture.
+
+        Return:  
+        Returns the uuid of the picture that has been inserted into the database.
+
+        Exception:
+        TypeError -- Gets risen if the type of the input isn't the expected type.
+        """
+
+        if type(pic) != np.ndarray or type(user_uuid) != uuid.UUID:
+            raise TypeError
+        
+        pic_uuid = uuid.uuid1()
+        self.resource.insert_one({
+            "_id" : pic_uuid,
+            "user_id" : user_uuid,
+            "res" : pickle.dumps(pic),
+            "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
+            "pic_uuid" : pic_uuid
+        })
+        
+        self.resource_context.update_one({"name":"wire"},{"$addToSet":{"res_id":pic_uuid}})
+        return pic_uuid
+
 
 class opencv_DB(BBDB):
     def __init__(self):
