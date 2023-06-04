@@ -50,7 +50,13 @@ class BBDB:
 
     def delUser(self,user_id)-> bool:
         """
-        Delete a user from the database with the given user_id
+        Delete a user from the database.
+
+        Arguments:
+        user_id -- ID of the user that you want to delete.
+
+        Return:
+        Returns True if the user has been deleted and False otherwise.
         """
         if self.user.find_one({"_id":user_id}):
             self.user.delete_one({"_id":user_id})
@@ -60,7 +66,13 @@ class BBDB:
 
     def addAdminRelation(self, user_id):
         """
-        Add a user as an admin with the given user_id
+        Add a user as an admin.
+
+        Arguments:
+        user_id -- ID of the user you want to add to add as admin
+
+        Return:
+        Returns True if the user has been added and False otherwise.
         """
         if self.user.find_one({"_id":user_id}):
             self.user.update_one({"_id":user_id},{"$set":{"is_admin":True}})
@@ -88,6 +100,9 @@ class BBDB:
     def login_user(self, user_id):
         """
         Creates a new entry in the login_table for the user with the given uuid or username.
+
+        Arguments:
+        user_id -- ID of the user that you are login in.
 
         Return:
         Returns (False,False) if the login fails and the timestamp of the
@@ -262,7 +277,6 @@ class BBDB:
             return None
         return user_entry["_id"]
 
-
     def getAllTrainingsImages(self):
         """
         Returns all training images from the database in three lists:
@@ -360,6 +374,28 @@ class wire_DB(BBDB):
         self.resource_context.update_one({"name":"wire"},{"$addToSet":{"res_id":pic_uuid}})
         return pic_uuid
 
+
+    def insertPicture(self, pic : np.ndarray, user_uuid : uuid.UUID):
+        # TODO: Take a look at what this funciton is supposed to do.
+        # Decide whether you want to implement it or not.
+
+        # Returns True/False on Success or Error
+        # Pickles Picture and inserts it into DB
+        # pic : picture to be saved as np.ndarray
+        # user_uuid : id of user wich owns picture
+
+        # TODO: Error Handling, in the rare case that a duplicate
+        # uuid is generated this method has to try again
+
+        raise NotImplementedError
+
+    def getPicture(self,query : str):
+        # TODO: was not implemented yet
+        raise NotImplementedError
+
+class wire_DB(BBDB):
+    def __init__(self):
+        BBDB.__init__(self)
 
 class opencv_DB(BBDB):
     def __init__(self):
