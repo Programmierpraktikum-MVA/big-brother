@@ -1,10 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
 from tkinter import ttk
-import matplotlib.pyplot as plt
 import time
 import pandas as pd
-import numpy as np
 import sys
 import os
 
@@ -16,7 +14,7 @@ class BenchmarkApp(tk.Tk):
     def __init__(self, *args, **kwargs):
         tk.Tk.__init__(self, *args, **kwargs)
 
-        self.title("DatabaseManagement Benchmark Program")
+        self.title("Database Benchmark Program")
         self.geometry("500x350")
 
         self.label_iterations = tk.Label(self, text="Enter the number of iterations:")
@@ -56,11 +54,13 @@ class BenchmarkApp(tk.Tk):
         self.progressbar["maximum"] = iterations * users_per_iteration
         self.progressbar["value"] = 0
 
+        db = BBDB()  # Instantiate the BBDB class
+
         for i in range(iterations):
             start_time = time.time()
 
-            # Run code here and measure the execution time
-            execution_time = self.run_code(users_per_iteration)
+            # Run database operations here and measure the execution time
+            execution_time = self.run_database_operations(db, users_per_iteration)
 
             end_time = time.time()
             iteration_execution_time = end_time - start_time
@@ -81,14 +81,10 @@ class BenchmarkApp(tk.Tk):
 
         messagebox.showinfo("Benchmark Results", df.to_string(index=False))
 
-    def run_code(self, users_per_iteration):
-        # Instantiate the BBDB class and perform database operations
-        db = BBDB()
-
-        # Example database operations
+    def run_database_operations(self, db, users_per_iteration):
         start_time = time.time()
 
-        # Delete existing users (uncomment if error "Username already in use!" appears)
+        # Delete existing users (uncomment if necessary)
         """
         existing_users = db.getUsers()
         for user_id in existing_users:
