@@ -11,7 +11,7 @@ import uuid
 import bson
 
 DB = DatabaseManagement.wire_DB()
-
+# start of the program
 print("start")
 
 images = []
@@ -23,6 +23,7 @@ path = "./jonny_cut/"
 img_str_list = lib.list_directory(path)
 
 for img_str in sorted(img_str_list):
+    # start of processing an image
     print("test")
 
     if img_str[-3:] != "png":
@@ -57,7 +58,10 @@ for img_str in sorted(img_str_list):
 
     print("test4")
     # NotImplementedError
-    pic_uuid = DB.insertPicture(image, user_uuid_binary)
+    # for testing purposes
+    # print(type(image))
+    # print(type(user_uuid))
+    pic_uuid = DB.insertTrainingPicture(image, user_uuid)
     print("inserted: {}\nwith uuid: {}\nand user uuid: {}\n\n\n".format(img_str, pic_uuid, user_uuid))
 
 DB.closeGraceful()
