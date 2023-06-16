@@ -8,7 +8,7 @@ can Import and Export Pictures from Database
 @Project: ODS-Praktikum-Big-Brother
 @Filename: new_database_management.py
 @Last modified by:   Julian Flieller
-@Last modified time: 2023-05-31
+@Last modified time: 2023-06-16
 """
 import numpy as np
 import pickle
@@ -232,9 +232,7 @@ class BBDB:
         Exception:
         Raises an exception if the username already exists.
         """
-        new_uuid = uuid.uuid1()
-        while self.checkUserIDExists(new_uuid):
-            new_uuid = uuid.uuid1()
+        new_uuid = uuid.uuid4()
 
         if self.user.find_one({"username" : username}):
             raise UsernameExists("Username in use!")
@@ -369,9 +367,7 @@ class wire_DB(BBDB):
         BBDB.__init__(self, mongo_client=mongo_client)
         if not self.resource_context.find({"name": "wire"}):
             self.resource_context.insert_one({
-                "_id": uuid.uuid1(), # TODO: Collision is possible. If many items in resource_context
-                                     # get generated at the same time (e.g. by multiple clients). 
-                                     # Also if other items in resource_context get generated.
+                "_id": uuid.uuid4(),
                 "name": "wire",
                 "username": None,
                 "res_id": []})
@@ -418,7 +414,7 @@ class wire_DB(BBDB):
         
         # TODO: There might be some problems if multiple files are inserted
         # concurrently
-        pic_uuid = str(uuid.uuid1())
+        pic_uuid = str(uuid.uuid4())
         self.resource.insert_one({
             "_id" : pic_uuid,
             "user_id": str(user_uuid),
@@ -481,7 +477,7 @@ class vid_DB(BBDB):
            raise TypeError
 
         fs = GridFSBucket(self.db, "resource")
-        vid_uuid = str(uuid.uuid1())
+        vid_uuid = str(uuid.uuid4())
 
         fs.upload_from_stream_with_id(
             vid_uuid,
