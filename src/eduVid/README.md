@@ -27,6 +27,19 @@ The concept of the project is to greatly facilitate the learning process by effe
 - If the keywords from the OCR and the script overlap, it can be assumed that the topic has changed
 - Sections between topic changes will be indexed and described by keywords
 
+  
+## Requirements
+
+OpenCV
+```bash
+  pip install opencv-python
+```
+Tesseract 
+```bash
+The installation proceeds differently depending on the operating system.
+```
+detailed [instructions](https://github.com/tesseract-ocr/tesseract)
+
 ### Subteam members
 
 - **miloSK1 (Milosz)**
