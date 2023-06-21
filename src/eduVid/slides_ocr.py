@@ -17,6 +17,9 @@ merged_output_file = 'merged_output.txt'
 # Define the separator between slide texts
 slide_separator = '=== SLIDE ==='
 
+# Set OCR language to German
+ocr_language = 'deu'
+
 # Get the file names in the directory
 file_texts = []
 
@@ -35,8 +38,8 @@ for root, dirs, file_names in os.walk(path_to_images):
         # Create a PIL Image object from the thresholded image
         pil_img = Image.fromarray(thresholded_img)
 
-        # Extract text from the thresholded image
-        text = pytesseract.image_to_string(pil_img)
+        # Extract text from the thresholded image with German language
+        text = pytesseract.image_to_string(pil_img, lang=ocr_language)
 
         # Append the extracted text to the list
         file_texts.append(text)
