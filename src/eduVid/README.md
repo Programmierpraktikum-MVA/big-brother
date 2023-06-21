@@ -45,6 +45,11 @@ The Natural Language Toolkit (NLTK)
 pip install nltk
 ```
 
+Rapid Automatic Keyword Extraction (RAKE)
+```bash
+pip install rake-nltk
+```
+
 ### Subteam members
 
 - **miloSK1 (Milosz)**
