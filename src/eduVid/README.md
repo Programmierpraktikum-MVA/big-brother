@@ -40,6 +40,11 @@ The installation proceeds differently depending on the operating system.
 ```
 detailed [instructions](https://github.com/tesseract-ocr/tesseract)
 
+The Natural Language Toolkit (NLTK)
+```bash
+pip install nltk
+```
+
 ### Subteam members
 
 - **miloSK1 (Milosz)**
