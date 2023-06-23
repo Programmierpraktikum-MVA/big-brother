@@ -50,6 +50,17 @@ Rapid Automatic Keyword Extraction (RAKE)
 pip install rake-nltk
 ```
 
+Tkinter
+```bash
+pip install tk
+```
+
+VLC
+```bash
+pip install python-vlc
+```
+! also needs to be installed locally
+
 ### Subteam members
 
 - **miloSK1 (Milosz)**
