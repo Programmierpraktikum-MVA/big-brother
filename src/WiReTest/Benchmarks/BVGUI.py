@@ -2,11 +2,8 @@
 # @Date:   2021-06-03T22:21:03+02:00
 # @Project: ODS-Praktikum-Big-Brother
 # @Filename: BVGUI.py
-# @Last modified by:   thekalk
-# @Last modified time: 2021-06-09T14:55:51+02:00
-
-
-
+# @Last modified by:   Julian Flieller
+# @Last modified time: 2023-06-23
 from benchmark import benchRecog
 from benchmark import userRecog
 import cv2
@@ -50,7 +47,6 @@ if platform.system() == 'Linux':
 # Naming Convention:
 # BVGUI = Benchmark Viewer Graphical User Interface
 
-
 class BVGUI (tk.Frame):
     """
     Benchmark Viewer
@@ -77,7 +73,7 @@ class BVGUI (tk.Frame):
 
         self.updateFunctions = []
 
-        self.DB = DBM.wire_DB("h2938366.stratoserver.net")
+        self.DB = DBM.wire_DB()
 
         self.exitFlag = False
 
@@ -357,7 +353,7 @@ class BVGUI (tk.Frame):
         counter = 0
         for key, value in userDict.items():
             counter += 1
-            u_pics , u_pic_uuids = self.DB.getTrainingPictures("WHERE user_uuid = '{}'".format(key))
+            u_pics , u_pic_uuids = self.DB.getTrainingPictures(user_uuid=key)
             pics += u_pics
             pic_uuids += u_pic_uuids
             for x in u_pics:
@@ -393,7 +389,7 @@ class BVGUI (tk.Frame):
             DBUser.imgShape = maxShape
 
             #imgs_test.append(cv2.cvtColor(cv2.resize(img, dsize=(98,116), interpolation=cv2.INTER_CUBIC),cv2.COLOR_BGR2GRAY))
-            #pics , pic_uuids = self.DB.getTrainingPictures("WHERE user_uuid = '{}'".format(key))
+            #pics , pic_uuids = self.DB.getTrainingPictures(user_uuid=key)
 
             recogPictureNum = 0
             trainPictureNum = 0
