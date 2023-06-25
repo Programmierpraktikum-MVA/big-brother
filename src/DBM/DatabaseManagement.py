@@ -362,7 +362,7 @@ class wire_DB(BBDB):
         BBDB.__init__(self, mongo_client=mongo_client)
         if not self.resource_context.find_one({"name": "wire"}):
             self.resource_context.insert_one({
-                "_id": uuid.uuid1(), # TODO: Collision is possible. If many items in resource_context
+                "_id": str(uuid.uuid1()), # TODO: Collision is possible. If many items in resource_context
                                      # get generated at the same time (e.g. by multiple clients). 
                                      # Also if other items in resource_context get generated.
                 "name": "wire",
