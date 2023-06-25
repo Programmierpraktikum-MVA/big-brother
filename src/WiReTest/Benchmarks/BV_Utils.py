@@ -72,11 +72,14 @@ class UserTimer(BenchmarkTimer):
         self.userEndTimesRaw.append(endTime)
 
     def getTimes (self):
+        print(len(self.userList), len(self.userStartTimesRaw), len(self.userEndTimesRaw))
+        while len(self.userEndTimesRaw) < len(self.userStartTimesRaw):
+            self.endTimer(None)
+            print("Warning: End timer hasn't been stopped and had to be stopped manually")
+        # TODO: Find out error here 
 
         df = pd.DataFrame({'user' : self.userList,'startTime' : self.userStartTimesRaw, 'endTime' : self.userEndTimesRaw})
-
         df['executeTime'] = df['endTime'] - df['startTime']
-
         return df
 
 
@@ -162,7 +165,7 @@ class progresWindow:
         try:
             self.progressbars[name]
         except KeyError:
-            print("Warning : Name not found!")
+            print(f"Warning : Name ({name}) not found!")
             return
 
         self.progressbars[name][0].destroy()
@@ -215,7 +218,7 @@ class progresWindow:
         try:
             self.progressbars[name]
         except KeyError:
-            print("Warning : Name not found!")
+            print(f"Warning : Name ({name}) not found!")
             return
 
         #print(self.progressbars[name][1])
