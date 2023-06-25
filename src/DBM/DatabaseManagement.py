@@ -58,12 +58,6 @@ class BBDB:
         """
         self.close()
 
-    def closeGraceful(self):
-        """
-        not needed for mongodb
-        """
-        self.close()
-
     def commit(self):
         """
         not needed for mongodb
@@ -81,8 +75,8 @@ class BBDB:
         Returns True if the user has been deleted and False otherwise.
         """
         user_id = str(user_id)
-        if self.user.find_one({"_id": user_id}):
-            self.user.delete_one({"_id": user_id})
+        if self.user.find_one({"_id": str(user_id)}):
+            self.user.delete_one({"_id": str(user_id)})
             return True
         print("WARNING: Database Login Failed!")
         return False
@@ -97,9 +91,8 @@ class BBDB:
         Return:
         Returns True if the user has been added and False otherwise.
         """
-        user_id = str(user_id)
-        if self.user.find_one({"_id": user_id}):
-            self.user.update_one({"_id": user_id}, {"$set": {"is_admin": True}})
+        if self.user.find_one({"_id": str(user_id)}):
+            self.user.update_one({"_id": str(user_id)}, {"$set": {"is_admin": True}})
             return True
         print("WARNING: AddAdminRelation Failed!")
         return False
@@ -149,7 +142,7 @@ class BBDB:
         login if it succeeds.
         """
         localTime = dt.datetime.now(tz=timezone('Europe/Amsterdam'))
-        if self.user.find_one({"_id":user_id}):
+        if self.user.find_one({"_id":str(user_id)}):
             self.login_attempt.insert_one({
                 "user_id" : str(user_id),
                 "date" : localTime,
