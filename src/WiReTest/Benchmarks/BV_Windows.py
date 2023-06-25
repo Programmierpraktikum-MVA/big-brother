@@ -91,27 +91,23 @@ class BVWindow:
             userTimes = self.parent.bR.TPUserTimer.getTimes()
 
         elif benchmarkType == "TN":
-
             self.scores = self.parent.bR.run_true_negatives()
             userTimes = self.parent.bR.TNUserTimer.getTimes()
 
         elif benchmarkType == "OFTN":
-
-            self.scores = self.parent.bR.openface_run_true_negatives()
+            # TODO: openface_run_true_negatives_doesn't exist somehow
+            self.scores = self.parent.bR.openface_run_true_positives()
             userTimes = self.parent.bR.OFTNUserTimer.getTimes()
 
         elif benchmarkType == "OFTP":
-
             self.scores = self.parent.bR.openface_run_true_positives()
             userTimes = self.parent.bR.OFTPUserTimer.getTimes()
 
         elif benchmarkType == "CV2TN":
-
             self.scores = self.parent.bR.opencv_run_true_negatives()
             userTimes = self.parent.bR.CV2TNUserTimer.getTimes()
 
         elif benchmarkType == "CV2TP":
-
             self.scores = self.parent.bR.opencv_run_true_positives()
             userTimes = self.parent.bR.CV2TPUserTimer.getTimes()
 
