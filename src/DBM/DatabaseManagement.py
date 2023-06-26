@@ -428,7 +428,7 @@ class wire_DB(BBDB):
         ids = []
         for r in resources:
             pics.append(pickle.loads(r["res"]))
-            ids.append(r["_id"])
+            ids.append(uuid.UUID(r["_id"]))
 
         return pics, ids
     
@@ -449,6 +449,8 @@ class wire_DB(BBDB):
         """
         if type(pic) != np.ndarray or type(user_uuid) != uuid.UUID:
             raise TypeError
+        if not self.checkUserIDExists(user_uuid):
+            raise UserDoesntExist("The user doesn't exist.")
         
         pic_uuid = uuid.uuid4()
         for _ in range(self._RETRY_AFTER_FAILURE):
@@ -574,6 +576,9 @@ class frontend_DB(BBDB):
 
 
 class UsernameExists(Exception):
+    pass
+
+class UserDoesntExist(Exception):
     pass
 
 """
