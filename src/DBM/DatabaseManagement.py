@@ -392,7 +392,7 @@ class BBDB:
 class wire_DB(BBDB):
     def __init__(self, mongo_client=None):
         BBDB.__init__(self, mongo_client=mongo_client)
-        if not self._resource_context.find({"name": "wire"}):
+        if not self._resource_context.find_one({"name": "wire"}):
             for _ in range(self._RETRY_AFTER_FAILURE):
                 try: 
                     self._resource_context.insert_one({
@@ -404,23 +404,24 @@ class wire_DB(BBDB):
                 except pymongo.errors.DuplicateKeyError:
                     pass
 
-        self.wire_context_collection = self._resource_context.find_one({"name": "wire"})
-
     def getTrainingPictures(self, user_uuid: uuid.UUID = None):
         """
         Returns training pictures from the database from the wire resource context
         """
         # TODO: We need to be able to verify whether a certain user with the 
         # user_id exists before we check
+        wire_context_collection = self._resource_context.find_one({"name": "wire"})
+        assert(wire_context_collection is not None)
+
         resources = None
         if user_uuid: 
             resources = self._resource.find({
-                        "_id": {"$in": self.wire_context_collection["res_id"]},
+                        "_id": {"$in": wire_context_collection["res_id"]},
                         "user_id": str(user_uuid),
                     })
         else: 
             resources = self._resource.find({
-                        "_id": {"$in": self.wire_context_collection["res_id"]},
+                        "_id": {"$in": wire_context_collection["res_id"]},
                     })
 
         pics = []
@@ -467,6 +468,7 @@ class wire_DB(BBDB):
         self._resource_context.update_one(
                 {"name": "wire"},
                 {"$addToSet": {"res_id": str(pic_uuid)}})
+
         return pic_uuid
 
     def insertPicture(self, pic : np.ndarray, user_uuid : uuid.UUID):
