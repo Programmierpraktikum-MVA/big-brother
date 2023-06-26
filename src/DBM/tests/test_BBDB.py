@@ -131,28 +131,19 @@ class BBDBTest(unittest.TestCase):
         self.output_assertEqual(self.db.getUsers(), {})
         self.output_assertEqual(self.db.getUserWithId(uuid.uuid1()), None)
 
-    def test_login_users(self):
-        # TODO: Implement
-        pass
-
     def test_basic_login_workflow(self):
-        # TODO: Finish
-        return
+        # TODO: Maybe implement more tests like this
         user_id = self.db.register_user("user", None)
-        # ...
+
         timestamp = self.db.login_user(user_id)
-        self.db.getTrainingPictures(user_id)
-
-        # user gives us picture
-        user_input_pic = ...
-        # authenticate picture
-
-        pic_uuid = self.db.insertTrainingPicture(
-            np.asarray(user_input_pic, dtype=np.float64),
-            user_id)
+        # TODO: Implement tests for error handling when pic_uuid doesn't 
+        # exist anylonger
         self.db.update_login(user_uuid=user_id, 
                              time=timestamp,
                              inserted_pic_uuid=pic_uuid)
+
+        self.assertEqual(self.db.getLoginLogOfUser(user_id)[0][0],
+                         timestamp)
 
     def test_basic_user_deletion(self):
         # TODO: Implement
