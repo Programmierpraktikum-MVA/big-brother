@@ -398,9 +398,8 @@ class wire_DB(BBDB):
         """
         # TODO: We need to be able to verify whether a certain user with the 
         # user_id exists before we check
-        # TODO: Find a way to make this prettier
         resources = None
-        if user_uuid: 
+        if user_uuid:
             resources = self.resource.find({
                         "_id": {"$in": self.wire_context_collection["res_id"]},
                         "user_id": str(user_uuid),
