@@ -109,8 +109,8 @@ class BBDBTest(unittest.TestCase):
         # TODO: User encoding ID ask again...
         self.db.register_user("name", None)
         self.assertRaises(UsernameExists, 
-                          self.db.register_user("name", None),
-                          "Username already exists, but on exception")
+                          self.db.register_user, 
+                          "name", None)
 
     def test_getters_no_users(self):
         """ 
@@ -123,9 +123,12 @@ class BBDBTest(unittest.TestCase):
         - getUsers
         - getUserWithId
         """
-        self.output_assertEqual(self.db.getUser(uuid.uuid1()), None)
-        self.output_assertEqual(self.db.getUsername([uuid.uuid1(), uuid.uuid1()]), [])
-        self.output_assertEqual(self.db.getUsers(), [])
+        self.output_assertEqual(self.db.getUser(str(uuid.uuid1())), None)
+        self.output_assertEqual(
+                self.db.getUsername([uuid.uuid1(), uuid.uuid1()]), 
+                [None, None]
+            )
+        self.output_assertEqual(self.db.getUsers(), {})
         self.output_assertEqual(self.db.getUserWithId(uuid.uuid1()), None)
 
     def test_login_users(self):
@@ -133,8 +136,23 @@ class BBDBTest(unittest.TestCase):
         pass
 
     def test_basic_login_workflow(self):
-        # TODO: Implement
-        pass
+        # TODO: Finish
+        return
+        user_id = self.db.register_user("user", None)
+        # ...
+        timestamp = self.db.login_user(user_id)
+        self.db.getTrainingPictures(user_id)
+
+        # user gives us picture
+        user_input_pic = ...
+        # authenticate picture
+
+        pic_uuid = self.db.insertTrainingPicture(
+            np.asarray(user_input_pic, dtype=np.float64),
+            user_id)
+        self.db.update_login(user_uuid=user_id, 
+                             time=timestamp,
+                             inserted_pic_uuid=pic_uuid)
 
     def test_basic_user_deletion(self):
         # TODO: Implement

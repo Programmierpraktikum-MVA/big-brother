@@ -8,7 +8,7 @@ can Import and Export Pictures from Database
 @Project: ODS-Praktikum-Big-Brother
 @Filename: new_database_management.py
 @Last modified by:   Julian Flieller
-@Last modified time: 2023-05-31
+@Last modified time: 2023-06-16
 """
 import numpy as np
 import pickle
@@ -40,11 +40,15 @@ class BBDB:
         else: 
             self.cluster = mongo_client
 
-        self.db = self.cluster["BigBrother"]
-        self.user = self.db["user"]
-        self.login_attempt = self.db["login_attempt"]
-        self.resource = self.db["resource"]
-        self.resource_context = self.db["resource_context"]
+        # Constants
+        self._RETRY_AFTER_FAILURE = 10
+
+        # Values
+        self._db = self.cluster["BigBrother"]
+        self._user = self._db["user"]
+        self._login_attempt = self._db["login_attempt"]
+        self._resource = self._db["resource"]
+        self._resource_context = self._db["resource_context"]
 
     def close(self):
         """
@@ -75,8 +79,8 @@ class BBDB:
         Returns True if the user has been deleted and False otherwise.
         """
         user_id = str(user_id)
-        if self.user.find_one({"_id": str(user_id)}):
-            self.user.delete_one({"_id": str(user_id)})
+        if self._user.find_one({"_id": user_id}):
+            self._user.delete_one({"_id": user_id})
             return True
         print("WARNING: Database Login Failed!")
         return False
@@ -91,8 +95,9 @@ class BBDB:
         Return:
         Returns True if the user has been added and False otherwise.
         """
-        if self.user.find_one({"_id": str(user_id)}):
-            self.user.update_one({"_id": str(user_id)}, {"$set": {"is_admin": True}})
+        user_id = str(user_id)
+        if self._user.find_one({"_id": user_id}):
+            self._user.update_one({"_id": user_id}, {"$set": {"is_admin": True}})
             return True
         print("WARNING: AddAdminRelation Failed!")
         return False
@@ -123,11 +128,16 @@ class BBDB:
         Return:
         Returns the a list of usernames that correspond to the user_uuid
         that have been inputted. The index i of the return list corresponds
-        to uuids[i] in the input.
+        to uuids[i] in the input. It a uuid doesn't belong to any user then None 
+        is returned for the entry.
         """
         usernames = []
         for user_id in uuids:
-            usernames.append(self.user.find_one({"_id": str(user_id)})["username"])
+            entries = self._user.find_one({"_id": str(user_id)})
+            entry = None
+            if entries:
+                entry = entries["username"]
+            usernames.append(entry)
         return usernames
 
     def login_user(self, user_id: uuid.UUID):
@@ -142,8 +152,8 @@ class BBDB:
         login if it succeeds.
         """
         localTime = dt.datetime.now(tz=timezone('Europe/Amsterdam'))
-        if self.user.find_one({"_id":str(user_id)}):
-            self.login_attempt.insert_one({
+        if self._user.find_one({"_id":user_id}):
+            self._login_attempt.insert_one({
                 "user_id" : str(user_id),
                 "date" : localTime,
                 "login_suc": False,           #initially False; set to True if update_login() successfull
@@ -193,7 +203,7 @@ class BBDB:
             return False, False
         
         try:
-            self.login_attempt.update_one(
+            self._login_attempt.update_one(
                 {
                     "user_id": user_id,
                     "date": time
@@ -210,6 +220,26 @@ class BBDB:
             print("WARNING: Database Login Update!")
             return False, False
 
+    def getLoginLogOfUser(self, user_uuid: uuid.UUID):
+        # TODO: Write tests for this method
+        """
+        Outputs log data of the user.
+
+        Arguments:
+        user_uuid -- The id of the user from which you want to get the log
+        data.
+
+        Returns:
+        A list containing multiple Lists with the following structure:
+        [<login_date>, <res_id of success resource>]. If the a login at 
+        a certain date wasn't successful then the res_id will be None.
+        """
+        log = []
+        logins = self._login_attempt.find({"user_id": str(user_uuid)})
+        for login in logins:
+            log.append([login["date"], login["success_res_id"]])
+        return log
+
     def register_user(self, username: str, user_enc_res_id: uuid.UUID):
         """
         Creates a new user in the database with the given username.
@@ -225,19 +255,21 @@ class BBDB:
         Exception:
         Raises an exception if the username already exists.
         """
-        new_uuid = uuid.uuid1()
-        while self.checkUserIDExists(new_uuid):
-            new_uuid = uuid.uuid1()
-
-        if self.user.find_one({"username" : username}):
+        if self._user.find_one({"username" : username}):
             raise UsernameExists("Username in use!")
-        else:
-            self.user.insert_one({
-                "_id": str(new_uuid),
-                "username" : username, 
-                "user_enc_res_id" : str(user_enc_res_id),
-                "is_admin" : False})
-            return new_uuid
+
+        new_uuid = uuid.uuid4()
+        for _ in range(self._RETRY_AFTER_FAILURE):
+            try: 
+                self._user.insert_one({
+                    "_id": str(new_uuid),
+                    "username" : username, 
+                    "user_enc_res_id" : str(user_enc_res_id),
+                    "is_admin" : False})
+                break
+            except pymongo.errors.DuplicateKeyError:
+                new_uuid = uuid.uuid4()
+        return new_uuid
 
     def getUsers(self, limit=-1):
         """
@@ -254,7 +286,7 @@ class BBDB:
         list with `limit` amount of entries. The dictionary key are the user_uuid
         (with type uuid.UUID) and the value is the username (with type str).
         """
-        users = self.user.find()
+        users = self._user.find()
         if limit == 0:
             return {}
         elif limit > 0:
@@ -276,7 +308,7 @@ class BBDB:
         Returns the username corresponding to the user_id. If the user with the
         given ID doesn't exist then None gets returned.
         """
-        user_entry = self.user.find_one({"_id" : str(user_id)})
+        user_entry = self._user.find_one({"_id" : str(user_id)})
         if not user_entry: 
             return None
         return user_entry["username"]
@@ -293,10 +325,10 @@ class BBDB:
         False otherwise (e.g. user didn't exist in the database).
         """
         user_id = str(user_id)
-        if self.user.find_one({"_id": user_id}):
+        if self._user.find_one({"_id": user_id}):
             self.delUser(user_id)
-            self.login_attempt.delete_many({"user_id": user_id}) 
-            self.resource.delete_many({"user_id": user_id})
+            self._login_attempt.delete_many({"user_id": user_id}) 
+            self._resource.delete_many({"user_id": user_id})
             # TODO: resource_context also needs to get updated
             return True
         return False
@@ -312,7 +344,7 @@ class BBDB:
         Returns the uuid corresponding to the username. If the username
         doesn't exist then it returns None.
         """
-        user_entry = self.user.find_one({"username": username})
+        user_entry = self._user.find_one({"username": username})
         if not user_entry:
             return None
         return uuid.UUID(user_entry["_id"])
@@ -360,15 +392,19 @@ class BBDB:
 class wire_DB(BBDB):
     def __init__(self, mongo_client=None):
         BBDB.__init__(self, mongo_client=mongo_client)
-        if not self.resource_context.find_one({"name": "wire"}):
-            self.resource_context.insert_one({
-                "_id": str(uuid.uuid1()), # TODO: Collision is possible. If many items in resource_context
-                                     # get generated at the same time (e.g. by multiple clients). 
-                                     # Also if other items in resource_context get generated.
-                "name": "wire",
-                "username": None,
-                "res_id": []})
-        self.wire_context_collection = self.resource_context.find_one({"name": "wire"})
+        if not self._resource_context.find({"name": "wire"}):
+            for _ in range(self._RETRY_AFTER_FAILURE):
+                try: 
+                    self._resource_context.insert_one({
+                        "_id": str(uuid.uuid4()),
+                        "name": "wire",
+                        "username": None,
+                        "res_id": []})
+                    break
+                except pymongo.errors.DuplicateKeyError:
+                    pass
+
+        self.wire_context_collection = self._resource_context.find_one({"name": "wire"})
 
     def getTrainingPictures(self, user_uuid: uuid.UUID = None):
         """
@@ -376,15 +412,14 @@ class wire_DB(BBDB):
         """
         # TODO: We need to be able to verify whether a certain user with the 
         # user_id exists before we check
-        # TODO: Find a way to make this prettier
         resources = None
         if user_uuid: 
-            resources = self.resource.find({
+            resources = self._resource.find({
                         "_id": {"$in": self.wire_context_collection["res_id"]},
                         "user_id": str(user_uuid),
                     })
         else: 
-            resources = self.resource.find({
+            resources = self._resource.find({
                         "_id": {"$in": self.wire_context_collection["res_id"]},
                     })
 
@@ -411,25 +446,28 @@ class wire_DB(BBDB):
         Exception:
         TypeError -- Gets risen if the type of the input isn't the expected type.
         """
-
         if type(pic) != np.ndarray or type(user_uuid) != uuid.UUID:
             raise TypeError
         
-        # TODO: There might be some problems if multiple files are inserted
-        # concurrently
-        pic_uuid = str(uuid.uuid1())
-        self.resource.insert_one({
-            "_id" : pic_uuid,
-            "user_id": str(user_uuid),
-            "res" : pickle.dumps(pic),
-            "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
-            "pic_uuid": pic_uuid
-        })
-        self.resource_context.update_one(
-                {"name": "wire"},
-                {"$addToSet": {"res_id": pic_uuid}})
-        return uuid.UUID(pic_uuid)
+        pic_uuid = uuid.uuid4()
+        for _ in range(self._RETRY_AFTER_FAILURE):
+            try: 
+                self._resource.insert_one({
+                    "_id" : str(pic_uuid),
+                    "user_id": str(user_uuid),
+                    "res" : pickle.dumps(pic),
+                    "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
+                    "pic_uuid": str(pic_uuid)
+                })
+                break
+            except pymongo.errors.DuplicateKeyError:
+                pic_uuid = uuid.uuid4()
 
+        # TODO: Are there also exceptions that need to be handled?
+        self._resource_context.update_one(
+                {"name": "wire"},
+                {"$addToSet": {"res_id": str(pic_uuid)}})
+        return pic_uuid
 
     def insertPicture(self, pic : np.ndarray, user_uuid : uuid.UUID):
         """
@@ -451,6 +489,7 @@ class wire_DB(BBDB):
         This function has not been implemented.
         """
         raise NotImplementedError
+
 
 class vid_DB(BBDB):
     """Subclass from BBDB
@@ -480,23 +519,27 @@ class vid_DB(BBDB):
            raise TypeError
 
         fs = GridFSBucket(self.db, "resource")
-        vid_uuid = str(uuid.uuid1())
-
-        fs.upload_from_stream_with_id(
-            vid_uuid,
-            str(vid_uuid),
-            source = vid,
-            metadata = {
-                "user_id": str(user_uuid),
-                "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
-            }
-        )
+        vid_uuid = str(uuid.uuid4())
+        for i in range(self._RETRY_AFTER_FAILURE):
+            try:
+                fs.upload_from_stream_with_id(
+                    vid_uuid,
+                    str(vid_uuid),
+                    source = vid,
+                    metadata = {
+                        "user_id": str(user_uuid),
+                        "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
+                    }
+                )
+                break
+            # TODO: Are there more errors that should be handled?
+            except pymongo.errors.DuplicateKeyError:
+                vid_uuid = str(uuid.uuid4())
         
-        self.resource_context.update_one(
+        self._resource_context.update_one(
             {"name": "video"},
             {"$addToSet": {"res_id": vid_uuid}}
         )
-        
         return uuid.UUID(vid_uuid)        
 
     def getVideoStream(self, vid_uuid: uuid.UUID, stream):
@@ -514,10 +557,8 @@ class vid_DB(BBDB):
         if type(vid_uuid) != uuid.UUID:
            raise TypeError
 
-        fs = GridFSBucket(self.db, "resource")
+        fs = GridFSBucket(self._db, "resource")
         fs.download_to_stream(str(vid_uuid), stream)
-
-
 
 
 class opencv_DB(BBDB):
