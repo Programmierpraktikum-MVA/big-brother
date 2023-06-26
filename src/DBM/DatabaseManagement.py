@@ -40,6 +40,10 @@ class BBDB:
         else: 
             self.cluster = mongo_client
 
+        # Constants
+        self._RETRY_AFTER_FAILURE = 10
+
+        # Values
         self.db = self.cluster["BigBrother"]
         self.user = self.db["user"]
         self.login_attempt = self.db["login_attempt"]
@@ -130,11 +134,16 @@ class BBDB:
         Return:
         Returns the a list of usernames that correspond to the user_uuid
         that have been inputted. The index i of the return list corresponds
-        to uuids[i] in the input.
+        to uuids[i] in the input. It a uuid doesn't belong to any user then None 
+        is returned for the entry.
         """
         usernames = []
         for user_id in uuids:
-            usernames.append(self.user.find_one({"_id": str(user_id)})["username"])
+            entries = self.user.find_one({"_id": str(user_id)})
+            entry = None
+            if entries:
+                entry = entries["username"]
+            usernames.append(entry)
         return usernames
 
     def login_user(self, user_id: uuid.UUID):
@@ -232,17 +241,21 @@ class BBDB:
         Exception:
         Raises an exception if the username already exists.
         """
-        new_uuid = uuid.uuid4()
-
         if self.user.find_one({"username" : username}):
             raise UsernameExists("Username in use!")
-        else:
-            self.user.insert_one({
-                "_id": str(new_uuid),
-                "username" : username, 
-                "user_enc_res_id" : str(user_enc_res_id),
-                "is_admin" : False})
-            return new_uuid
+
+        new_uuid = uuid.uuid4()
+        for _ in range(self._RETRY_AFTER_FAILURE):
+            try: 
+                self.user.insert_one({
+                    "_id": str(new_uuid),
+                    "username" : username, 
+                    "user_enc_res_id" : str(user_enc_res_id),
+                    "is_admin" : False})
+                break
+            except pymongo.errors.DuplicateKeyError:
+                new_uuid = uuid.uuid4()
+        return new_uuid
 
     def getUsers(self, limit=-1):
         """
@@ -366,11 +379,17 @@ class wire_DB(BBDB):
     def __init__(self, mongo_client=None):
         BBDB.__init__(self, mongo_client=mongo_client)
         if not self.resource_context.find({"name": "wire"}):
-            self.resource_context.insert_one({
-                "_id": uuid.uuid4(),
-                "name": "wire",
-                "username": None,
-                "res_id": []})
+            for _ in range(self._RETRY_AFTER_FAILURE):
+                try: 
+                    self.resource_context.insert_one({
+                        "_id": str(uuid.uuid4()),
+                        "name": "wire",
+                        "username": None,
+                        "res_id": []})
+                    break
+                except pymongo.errors.DuplicateKeyError:
+                    pass
+
         self.wire_context_collection = self.resource_context.find({"name": "wire"})
 
     def getTrainingPictures(self, user_uuid: uuid.UUID = None):
@@ -408,25 +427,28 @@ class wire_DB(BBDB):
         Exception:
         TypeError -- Gets risen if the type of the input isn't the expected type.
         """
-
         if type(pic) != np.ndarray or type(user_uuid) != uuid.UUID:
             raise TypeError
         
-        # TODO: There might be some problems if multiple files are inserted
-        # concurrently
-        pic_uuid = str(uuid.uuid4())
-        self.resource.insert_one({
-            "_id" : pic_uuid,
-            "user_id": str(user_uuid),
-            "res" : pickle.dumps(pic),
-            "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
-            "pic_uuid": pic_uuid
-        })
+        pic_uuid = uuid.uuid4()
+        for _ in range(self._RETRY_AFTER_FAILURE):
+            try: 
+                self.resource.insert_one({
+                    "_id" : str(pic_uuid),
+                    "user_id": str(user_uuid),
+                    "res" : pickle.dumps(pic),
+                    "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
+                    "pic_uuid": str(pic_uuid)
+                })
+                break
+            except pymongo.errors.DuplicateKeyError:
+                pic_uuid = uuid.uuid4()
+
+        # TODO: Are there also exceptions that need to be handled?
         self.resource_context.update_one(
                 {"name": "wire"},
-                {"$addToSet": {"res_id": pic_uuid}})
-        return uuid.UUID(pic_uuid)
-
+                {"$addToSet": {"res_id": str(pic_uuid)}})
+        return pic_uuid
 
     def insertPicture(self, pic : np.ndarray, user_uuid : uuid.UUID):
         """
@@ -448,6 +470,7 @@ class wire_DB(BBDB):
         This function has not been implemented.
         """
         raise NotImplementedError
+
 
 class vid_DB(BBDB):
     """Subclass from BBDB
@@ -478,22 +501,26 @@ class vid_DB(BBDB):
 
         fs = GridFSBucket(self.db, "resource")
         vid_uuid = str(uuid.uuid4())
-
-        fs.upload_from_stream_with_id(
-            vid_uuid,
-            str(vid_uuid),
-            source = vid,
-            metadata = {
-                "user_id": str(user_uuid),
-                "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
-            }
-        )
+        for i in range(self._RETRY_AFTER_FAILURE):
+            try:
+                fs.upload_from_stream_with_id(
+                    vid_uuid,
+                    str(vid_uuid),
+                    source = vid,
+                    metadata = {
+                        "user_id": str(user_uuid),
+                        "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
+                    }
+                )
+                break
+            # TODO: Are there more errors that should be handled?
+            except pymongo.errors.DuplicateKeyError:
+                vid_uuid = str(uuid.uuid4())
         
         self.resource_context.update_one(
             {"name": "video"},
             {"$addToSet": {"res_id": vid_uuid}}
         )
-        
         return uuid.UUID(vid_uuid)        
 
     def getVideoStream(self, vid_uuid: uuid.UUID, stream):
@@ -513,8 +540,6 @@ class vid_DB(BBDB):
 
         fs = GridFSBucket(self.db, "resource")
         fs.download_to_stream(str(vid_uuid), stream)
-
-
 
 
 class opencv_DB(BBDB):
