@@ -522,7 +522,7 @@ class vid_DB(BBDB):
         if type(user_uuid) != uuid.UUID:
            raise TypeError
 
-        fs = GridFSBucket(self.db, "resource")
+        fs = GridFSBucket(self._db, "resource")
         vid_uuid = str(uuid.uuid4())
         for i in range(self._RETRY_AFTER_FAILURE):
             try:
