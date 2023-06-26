@@ -86,53 +86,37 @@ class BVWindow:
             return
 
         if benchmarkType == "TP":
-
             self.scores = self.parent.bR.run_true_positives()
             userTimes = self.parent.bR.TPUserTimer.getTimes()
-
         elif benchmarkType == "TN":
             self.scores = self.parent.bR.run_true_negatives()
             userTimes = self.parent.bR.TNUserTimer.getTimes()
-
         elif benchmarkType == "OFTN":
             # TODO: openface_run_true_negatives_doesn't exist somehow
             self.scores = self.parent.bR.openface_run_true_positives()
             userTimes = self.parent.bR.OFTNUserTimer.getTimes()
-
         elif benchmarkType == "OFTP":
             self.scores = self.parent.bR.openface_run_true_positives()
             userTimes = self.parent.bR.OFTPUserTimer.getTimes()
-
         elif benchmarkType == "CV2TN":
             self.scores = self.parent.bR.opencv_run_true_negatives()
             userTimes = self.parent.bR.CV2TNUserTimer.getTimes()
-
         elif benchmarkType == "CV2TP":
             self.scores = self.parent.bR.opencv_run_true_positives()
             userTimes = self.parent.bR.CV2TPUserTimer.getTimes()
-
-
         elif benchmarkType == "Mixed":
-
             numSelfIm = 5
             numDecoy = 5
             numDecoyIm = 10
-
             try:
-
                 numSelfIm = int(self.numSelfImagesEntry.get())
                 numDecoy = int(self.numDecoyUsersEntry.get())
                 numDecoyIm = int(self.numDecoyUserImages.get())
-
             except ValueError:
-
                 messagebox.showerror("Error", "Invalid Input only numbers allowed")
-                pass
                 return
-
             self.scores = self.parent.bR.run_mixed_positives(numSelfIm ,numDecoy,numDecoyIm)
             userTimes = self.parent.bR.MixedUserTimer.getTimes()
-
         self.updateListbox()
 
         #
