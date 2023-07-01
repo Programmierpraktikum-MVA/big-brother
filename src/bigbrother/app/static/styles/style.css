@@ -26,6 +26,7 @@ h1 {
 	font-size: 36px;
 	font-weight: 600;
 	letter-spacing: 1px;
+	opacity: 1;
 	}
 
 #center{
@@ -76,12 +77,16 @@ table tr td img {
 
 .cols{
 	display: grid;
+	opacity: 0.85;
 }
 .col:first-child{
 	grid-area: a;
 }
 .col:nth-child(2){
 	grid-area: b;
+}
+.col:nth-child(3){
+	grid-area: c;
 }
 
 .card{
@@ -95,6 +100,9 @@ table tr td img {
 .col:nth-child(2){
 	grid-area: b;
 }
+.col:nth-child(3){
+	grid-area: c;
+}
 
 
 
@@ -103,14 +111,15 @@ table tr td img {
 	.cols{
 		grid-template-areas:
 		"a"
-		"b";
+		"b"
+		"c";
 	}
 }
 
 @media (min-width: 768px){
 	.cols{
 		grid-template-areas:
-		"a b";
+		"a b c";
 	}
 }
 
