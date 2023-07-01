@@ -67,7 +67,6 @@ class benchRecog():
 
     def __init__(self,**kwargs):
 
-        #
         # Since Benchmarks can take long the
         # Master Class can define a Progresswindow so the GUI doesnt freeze
         # and can update
@@ -78,7 +77,7 @@ class benchRecog():
         self.pW = None          # progress window
 
         self.userLimit = 5
-        self.trainPictureAmount = 30
+        self.trainPictureAmount = 20
         self.recogPictureAmount = 10
 
         # initialize timers for respective tests
@@ -113,7 +112,10 @@ class benchRecog():
             self.pW.update("benchProg","Fetching Dataset...",0)
 
         #Fetch the Learning set from sklearn
-        lfw_people = fetch_lfw_people(min_faces_per_person=self.trainPictureAmount, resize=1)
+        lfw_people = fetch_lfw_people(
+                min_faces_per_person=self.recogPictureAmount+self.trainPictureAmount, 
+                resize=1
+            )
 
         # update progress window
         if self.pW:
@@ -143,63 +145,49 @@ class benchRecog():
         if self.pW:
             self.pW.update("benchProg","Building Image Data...",35)
 
-        #Set up Dataframe for better Datamanagement
-        # Dataframes provide many useful functions for Scientific Datamanipulation
-        # Like sorting Indexing etc.
-        self.df = pd.DataFrame(data = {'target' : targets,'name' : list(map(lambda x: target_names[x],targets)), 'img' : resizedImgs})
+        self.df = pd.DataFrame(data = {
+            'target' : targets,
+            'name' : list(map(lambda x: target_names[x],targets)), 
+            'img' : resizedImgs
+        })
         self.df = self.df.set_index('target').sort_index()
         print(self.df)
 
         self.FaceDetection = self.master.FaceDetection
 
-        #
-        # Init Users
-        # Assignes Images to their right owner, assignes Username and necessary Variables
-        #
-
+        # Init Users: Assignes Images to their right owner, assignes Username and necessary Variables
         self.users = []
         self.dbUsers = self.master.DbUsers
-
-
         userCount = self.userLimit
         userFin = 0
-        #
-        # Since I switched to Dataframes this could be done better
-        #
+
+        # TODO: Since I switched to Dataframes this could be done better
         self.recogPictureCount = 0
         self.trainPictureCount = 0
 
+        # Initializing users for benchmark tests: Inserting train and recognition images
         for index in range(self.userLimit):
             # update progress window
             if self.pW:
-                self.pW.update("benchProg","Initialize Users...",35 + userFin / userCount * 65)
+                self.pW.update("benchProg","Initialize Users...",35 + (userFin/userCount)*65)
 
             data = self.df.loc[index]
-
-            user_ = userRecog(list(data['name'])[0])
+            username = list(data['name'])[0]
+            user_ = userRecog(username)
 
             dataRecog = np.asarray(data['img'][:self.recogPictureAmount])
-            dataTrain = np.asarray(data['img'][self.recogPictureAmount:self.trainPictureAmount])
-            #print(len(dataRecog))
-            #print(len(dataTrain))
-
+            dataTrain = np.asarray(data['img'][self.recogPictureAmount:self.trainPictureAmount+self.recogPictureAmount])
             self.recogPictureCount += len(dataRecog)
             self.trainPictureCount += len(dataTrain)
 
-            user_.recogPictures = np.zeros((dataRecog.shape[0],dataRecog[0].shape[0]))
-            user_.trainPictures = np.zeros((dataTrain.shape[0],dataTrain[0].shape[0]))
-
-            for index,img in enumerate(dataRecog):
+            user_.recogPictures = np.zeros((dataRecog.shape[0], dataRecog[0].shape[0]))
+            user_.trainPictures = np.zeros((dataTrain.shape[0], dataTrain[0].shape[0]))
+            for index, img in enumerate(dataRecog):
                 user_.recogPictures[index] += img
-
-            for index,img in enumerate(dataTrain):
+            for index, img in enumerate(dataTrain):
                 user_.trainPictures[index] += img
 
-            #user.recogPictures = np.asarray(data[:5])
-            #user.trainPictures = np.asarray(data[5:])
-
             self.users.append(user_)
-
             userFin += 1
 
         # update progress window
@@ -213,9 +201,7 @@ class benchRecog():
 
     def modified_project_faces(self, pcs: np.ndarray, images: np.ndarray, mean_data: np.ndarray) -> np.ndarray:
         """
-        Modified Method from WiRe Algo wich needed to be slightly Changed
-
-        Project given image set into basis.
+        Modified Method from WiRe Algo: Project given image set into basis.
 
         Arguments:
         pcs: matrix containing principal components / eigenfunctions as rows
@@ -229,14 +215,10 @@ class benchRecog():
         # initialize coefficients array with proper size
         coefficients = np.zeros((len(images), pcs.shape[0]))
 
-        #mpl.pyplot.imshow(images[0], cmap="Greys_r")
-        #mpl.pyplot.show()
-
         # Doesnt need to be executed, done in Benchmark Init
         #images = setup_data_matrix(images)
 
         # Iterate over images and project each normalized image into principal component basis
-
         for img_index, img in enumerate(images):
             images[img_index] = images[img_index] - mean_data
 
@@ -263,6 +245,7 @@ class benchRecog():
         imgs_test: list of test images
         coeffs_test: Eigenface coefficient of test images
         """
+        # TODO: Properly comment this method
         """
         # Doesnt need to be executed, done in Benchmark Init
         # TODO: load test data set
@@ -287,17 +270,13 @@ class benchRecog():
     def wireAlgo(self,imgs_test,imgs_train):
         # TODO: Properly comment this section
         pcs, sv, mean_data  = main.calculate_pca(imgs_train)
-
         cutoff_threshold = 0.8
-
         k = main.accumulated_energy(sv, cutoff_threshold)
-
         pcs = pcs[0:k, :]
-
         coeffs_train = self.modified_project_faces(pcs, imgs_train, mean_data)
-
-        scores, imgs_test, coeffs_test = self.modified_identify_faces(coeffs_train, pcs, mean_data,imgs_test)
-
+        scores, imgs_test, coeffs_test = self.modified_identify_faces(
+                coeffs_train, pcs, mean_data,imgs_test
+            )
         return scores
 
     def run_true_negatives(self):
@@ -317,11 +296,13 @@ class benchRecog():
         self.TNUserTimer.clear()
 
         for user_index,user_ in enumerate(self.users):
-
-            self.TNUserTimer.startTimer(user_)
-
+            # TODO: The start of this enumeration is very similar across all benchmark methods
+            # it might be good to clean this up
             if self.pW:
-                self.pW.update("TNProg","[TN] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),userFin / userCount * 100)
+                self.pW.update(
+                    "TNProg","[TN] Benchmarking User: {}/{}...".format(user_.username,self.userLimit), 
+                    userFin/userCount * 100
+                )
 
             if self.root:
                 self.root.update()
@@ -329,8 +310,9 @@ class benchRecog():
             if len(user_.trainPictures) == 0:
                 continue
 
-            #Fetch User pictures
+            self.TNUserTimer.startTimer(user_)
 
+            # Fetch User pictures
             rand = random.randint(0,userCount - 1)
             while rand == user_index:
                 rand = random.randint(0,userCount - 1)
@@ -339,20 +321,16 @@ class benchRecog():
 
             imgs_test = user_.recogPictures
 
-            #
             # Running WiRe Algo on user
-            #
             try:
                 scores = self.wireAlgo(imgs_test ,imgs_train)
-            except ValueError:
+            except ValueError as e:
+                print("WARNING: wireAlgo terminated with an error:")
+                print(e)
                 return
 
-            #
             # Prepare Score Dataframe
-            #
-
             user_.recogScores = None
-
             for testImageIndex in range(scores.shape[1]):
                 recognisedImageIndex = np.argmin(scores[:, testImageIndex])
                 recognisedImageScore = np.min(scores[:, testImageIndex])
@@ -362,6 +340,7 @@ class benchRecog():
                 usernames.append(user_.username)
                 recogUsernames.append(self.users[rand].username)
 
+            # TODO: Why was that previously commented out?
             #recogScores.append(pd.DataFrame(data = {'testImageIndex' : testImageIndices,'recogImageIndex' : recogImageIndices,'recogScore' : recogImageScores}).set_index('recogImageIndex').sort_values(by='testImageIndex'))
 
             userFin += 1
@@ -370,16 +349,23 @@ class benchRecog():
         if self.pW:
             self.pW.finProgress("TNProg")
 
-        recogScores = pd.DataFrame(data = {'testImageIndex' : testImageIndices,'username' : usernames, 'recogImageIndex' : recogImageIndices,'recogUsername' : recogUsernames,'recogScore' : recogImageScores}).set_index('recogImageIndex').sort_values(by='testImageIndex')
+        recogScores = pd.DataFrame(
+            data = {
+                'testImageIndex':    testImageIndices,
+                'username':          usernames, 
+                'recogImageIndex':   recogImageIndices,
+                'recogUsername':     recogUsernames,
+                'recogScore' :       recogImageScores
+            }
+        ).set_index('recogImageIndex').sort_values(by='testImageIndex')
 
         return recogScores
 
-    def run_mixed_positives(self,numSelfImages,numDecoyUsers,numDecoyUserImages):
-
-        #
-        # Benchmark method for mixed benchmark
-        # Compares user images with image mixture of different users and a pic from the query user
-        #
+    def run_mixed_positives(self, numSelfImages, numDecoyUsers, numDecoyUserImages):
+        """
+        Benchmark method for mixed benchmark
+        Compares user images with image mixture of different users and a pic from the query user
+        """
 
         if self.pW:
             self.pW.createProgressbar("MProg")
@@ -406,16 +392,19 @@ class benchRecog():
 
         for user_ in self.users:
 
-            self.MixedUserTimer.startTimer(user_)
-
             if self.pW:
-                self.pW.update("MProg","[MP] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),userFin / userCount * 100)
+                self.pW.update(
+                    "MProg","[MP] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),
+                    userFin/userCount * 100
+                )
 
             if self.root:
                 self.root.update()
 
             if len(user_.trainPictures) == 0:
                 continue
+
+            self.MixedUserTimer.startTimer(user_)
 
             #Fetch User pictures
             #imgs_train = user_.trainPictures # Images are flattened
@@ -524,17 +513,19 @@ class benchRecog():
         #random.shuffle(self.users)
 
         for user_ in self.users:
-
-            self.TPUserTimer.startTimer(user_)
-
             if self.pW:
-                self.pW.update("TPProg","[TP] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),userFin / userCount * 100)
+                self.pW.update(
+                    "TPProg","[TP] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),
+                    userFin/userCount * 100
+                )
 
             if self.root:
                 self.root.update()
 
             if len(user_.trainPictures) == 0:
                 continue
+
+            self.TPUserTimer.startTimer(user_)
 
             #Fetch User pictures
             imgs_train = user_.trainPictures # Images are flattened
@@ -605,11 +596,10 @@ class benchRecog():
             plt.imshow(recogUser.trainPictures[int(scoreTuple[1])].reshape(user_.imgShape).astype("uint8"))
             plt.xlabel('Identified: {} with Score: {}'.format(scoreTuple[3],round(scoreTuple[4],4)),rotation=0)
 
-
             slotIndex += 2
 
-
     def findUsername(self,username):
+        # TODO: This looks very inefficient
         for user in self.users:
             if user.username == username:
                 return user
@@ -671,17 +661,19 @@ class benchRecog():
         #random.shuffle(self.users)
 
         for user_ in self.users:
-
-            self.OFTPUserTimer.startTimer(user_)
-
             if self.pW:
-                self.pW.update("Openface_TPProg","[TP] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),userFin / userCount * 100)
+                self.pW.update(
+                    "Openface_TPProg","[TP] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),
+                    userFin/userCount * 100
+                )
 
             if self.root:
                 self.root.update()
 
             if len(user_.trainPictures) == 0:
                 continue
+
+            self.OFTPUserTimer.startTimer(user_)
 
             #Fetch User pictures
             imgs_train = user_.trainPictures # Images are flattened
@@ -747,9 +739,6 @@ class benchRecog():
         return dists
 
     def opencv_single_dist_algo(self, imgs_test_raw,imgs_train_raw):
-
-
-
         #pre-process pictures to be in the right format
         imgs_train = []
         for train_img_processing in imgs_train_raw:
@@ -798,17 +787,19 @@ class benchRecog():
         #random.shuffle(self.users)
 
         for user_ in self.users:
-
-            self.CV2TPUserTimer.startTimer(user_)
-
             if self.pW:
-                self.pW.update("OpenCVTPProg","[CV2TP] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),userFin / userCount * 100)
+                self.pW.update(
+                    "OpenCVTPProg","[CV2TP] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),
+                    userFin/userCount * 100
+                )
 
             if self.root:
                 self.root.update()
 
             if len(user_.trainPictures) == 0:
                 continue
+
+            self.CV2TPUserTimer.startTimer(user_)
 
             #Fetch User pictures
             imgs_train = user_.trainPictures # Images are flattened
@@ -869,11 +860,11 @@ class benchRecog():
         self.CV2TNUserTimer.clear()
 
         for user_index,user_ in enumerate(self.users):
-
-            self.CV2TNUserTimer.startTimer(user_)
-
             if self.pW:
-                self.pW.update("CV2TNProg","[CV2TN] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),userFin / userCount * 100)
+                self.pW.update(
+                    "CV2TNProg","[CV2TN] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),
+                    userFin/userCount * 100
+                )
 
             if self.root:
                 self.root.update()
@@ -882,11 +873,12 @@ class benchRecog():
                 print("Training pictures empty")
                 continue
 
+            self.CV2TNUserTimer.startTimer(user_)
+
             #Fetch User pictures
             print("Fetching user")
             rand = random.randint(0,userCount - 1)
             while rand == user_index:
-                print(rand,"==",user_index)
                 rand = random.randint(0,userCount - 1)
 
             print("Test 1")

@@ -106,12 +106,13 @@ class BVGUI (tk.Frame):
 
         self.pW.createProgressbar("FrameInit")
 
-        #Initialize Windows
+        # Initialize windows
         self.pW.update("FrameInit","Initialising True Positive Viewer...",0)
         self.TPV = BVW.TPViewer(self,"visible")
         self.pW.update("FrameInit","Initialising True Positive Viewer...",25)
         self.pW.update("FrameInit","Initialising True Negative Viewer...",25)
         self.TNV = BVW.TNViewer(self,"hidden")
+
         self.pW.update("FrameInit","Initialising True Negative Viewer...",50)
         self.pW.update("FrameInit","Initialising Mixed Viewer...",50)
         self.MV = BVW.MixedViewer(self,"hidden")
@@ -119,8 +120,22 @@ class BVGUI (tk.Frame):
         self.pW.finProgress("FrameInit")
         self.UV = BVW.UserViewer(self,"visible","UserViewer")
 
-        # add windows
-        self.BVWindows = [self.TPV,self.TNV,self.MV,self.UV]
+        self.pW.update("FrameInit","Initialising CV2",75)
+        self.CV2TP = BVW.CV2TPViewer(self,"hidden")
+        self.pW.update("FrameInit","Initialising CV2 True Positive Viewer...",75)
+        self.pW.finProgress("FrameInit")
+
+        self.CV2TN = BVW.CV2TNViewer(self,"hidden")
+        self.pW.update("FrameInit","Initialising CV2 True Negative Viewer...",100)
+        self.pW.finProgress("FrameInit")
+
+        # add viewers that are available on all systems
+        self.BVWindows = [
+                self.TPV, self.TNV, self.MV, self.UV,
+                self.CV2TP, self.CV2TN,
+             ]
+
+        # linux specific windows
         if platform.system() == 'Linux':
             self.OFTP = BVW.OFTPViewer(self,"hidden")
             self.pW.update("FrameInit","Initialising Openface True Positive Viewer...",100)
@@ -132,33 +147,19 @@ class BVGUI (tk.Frame):
             self.pW.finProgress("FrameInit")
             self.BVWindows.append(self.OFTN)
 
-        self.pW.update("FrameInit","Initialising CV2",75)
-        self.CV2TP = BVW.CV2TPViewer(self,"hidden")
-        self.pW.update("FrameInit","Initialising CV2 True Positive Viewer...",75)
-        self.pW.finProgress("FrameInit")
-        self.BVWindows.append(self.CV2TP)
-
-        self.CV2TN = BVW.CV2TNViewer(self,"hidden")
-        self.pW.update("FrameInit","Initialising CV2 True Negative Viewer...",100)
-        self.pW.finProgress("FrameInit")
-        self.BVWindows.append(self.CV2TN)
-
         self.update()
 
-
-        #Configure Master Variables
+        # Configure master variables
         self.configureMaster()
 
         self.pW.update("guiInit","Done...",100)
-
-        #Hide Progress Window
         self.pW.finProgress("guiInit")
 
         self.master.deiconify()
 
 
 
-    def configureMaster (self):
+    def configureMaster(self):
 
         _bgcolor = '#FFFFFF'  # X11 color: 'gray85'
         _fgcolor = '#000000'  # X11 color: 'black'
@@ -166,13 +167,8 @@ class BVGUI (tk.Frame):
         _ana1color = '#d9d9d9' # X11 color: 'gray85'
         _ana2color = '#ececec' # Closest X11 color: 'gray92'
 
-        #
         # Global Init of ttk.Styles
-        #
-
         self.style = ttk.Style()
-        #if sys.platform == "win32":
-            #self.style.theme_use('winnative')
         self.style.configure('.',background=_bgcolor)
         self.style.configure('.',foreground=_fgcolor)
         self.style.configure('.',font=('Arial', 8))
@@ -180,8 +176,6 @@ class BVGUI (tk.Frame):
             [('selected', _compcolor), ('active',_ana2color)])
 
         self.titleFontStyle = ttk.Style()
-        #if sys.platform == "win32":
-            #self.style.theme_use('winnative')
         self.titleFontStyle.configure('.',background=_bgcolor)
         self.titleFontStyle.configure('.',foreground=_fgcolor)
         self.titleFontStyle.map('.',background=
@@ -196,15 +190,11 @@ class BVGUI (tk.Frame):
         self.master.title("BenchmarkViewer")
         self.master.configure(background="#d9d9d9")
 
-        #
         # GUI Menubar
-        #
-
         self.menubar = tk.Menu(self.master,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
         self.master.configure(menu = self.menubar)
 
         self.wireBar = tk.Menu(self.master,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
-
 
         self.wireBar.add_command(
                 activebackground="#ececec",
@@ -279,44 +269,28 @@ class BVGUI (tk.Frame):
                 label="User Viewer",
                 command = lambda: self.switchWindow("UserViewer"))
 
-
-
-
         self.master.protocol("WM_DELETE_WINDOW", self.closeGraceful)
 
     def updateBenchmark(self,**kwargs):
 
         userlimit = 5
-
         for key, value in kwargs.items():
             if key == 'userlimit':
                 userlimit = value
-
         self.bR = benchRecog(root = self.master,master = self,userlimit=userlimit,pW = self.pW)
-
 
     def update(self):
         """
-
         Update method Currently empty
         If foreign Classes need to be refreshed this is done here
-
         """
-
         for function in self.updateFunctions:
-            #print("executing : {}".format(function))
             function(self)
 
     def switchWindow(self,windowName):
 
-        #
-        # Switch Windows
-        #
-
         if windowName == "OFTNViewer" or windowName == "OFTPViewer":
-
             tk.messagebox.showerror("Error","Openface Algorithms are only available on Linux/Mac OS")
-
             return
 
         for window in self.BVWindows:
@@ -332,7 +306,6 @@ class BVGUI (tk.Frame):
         userDict = self.DB.getUsers(limit = 10)
         userList = []
         counter = 0
-        #return
         maxPicSize = 0
         maxShape = None
         pics = []
@@ -387,6 +360,8 @@ class BVGUI (tk.Frame):
             #print(user_pics)
 
             for index in range(len(user_pics)):
+                # TODO: is 3 the number of images? Or what does this magic number
+                # stand for?
                 if index % 3 == 0:
                     recogPictureNum += 1
                 else:
@@ -407,10 +382,7 @@ class BVGUI (tk.Frame):
             DBUser.trainPictures = np.zeros((trainPictureNum,maxPicSize))
 
             for index,picTuple in enumerate(user_pics.itertuples()):
-                #print(picTuple)
-
                 #resizedPic = cv2.resize(pic, dsize=maxShape[:2], interpolation=cv2.INTER_CUBIC).reshape(maxShape[0] * maxShape[1] * 3)
-
                 pic = getattr(picTuple,'pic_data')
                 if pic.shape[0] == 0 or pic.shape[1] == 0:
                     #create empty pic if its corrupted
@@ -420,22 +392,14 @@ class BVGUI (tk.Frame):
 
                 #if index < recogPictureNum:
                 if index % 3 == 0:
-
                     DBUser.recogPictures[index // 3] = resizedPic
-
                 else:
-
                     DBUser.trainPictures[index // 3] = resizedPic
-
-
                     #newDatabaseUser.trainPictures[index - recogPictureNum] = resizedPic
-
             #userList.append(DBUser)
-
         self.pW.finProgress("bbInit")
 
         #Get Minimum number of recog and train pictures
-
         minRecog = np.Inf
         minTrain = np.Inf
         minUserRecog = None
@@ -465,23 +429,15 @@ class BVGUI (tk.Frame):
 
         return finalUserList
 
-
     def closeGraceful(self):
-
-        #
-        # Controlled shutdown of GUI
-        # Closes foreign classes
-        # database connections etc.
-        #
-
+        """
+        Controlled shutdown of GUI, Closes foreign classes, database connections etc.
+        """
         self.master.destroy()
         self.exitFlag = True
         self.DB.close()
 
 if __name__ == '__main__':
-#
-# Driver Code
-#
    root = tk.Tk()
    main_app =  BVGUI(root)
 
@@ -491,6 +447,5 @@ if __name__ == '__main__':
        if not main_app.exitFlag:
            main_app.update()
            root.update()
-
        else:
            exit()

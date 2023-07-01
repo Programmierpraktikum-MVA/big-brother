@@ -59,7 +59,6 @@ class UserTimer(BenchmarkTimer):
         #self.userTimeDf = None
 
     def startTimer(self,user):
-
         startTime = t.time()
 
         self.userList.append(user)
@@ -67,18 +66,21 @@ class UserTimer(BenchmarkTimer):
 
 
     def endTimer(self,user):
-
+        # TODO: The user isn't used here! Could this lead to inconsistencies?
         endTime = t.time()
         self.userEndTimesRaw.append(endTime)
 
-    def getTimes (self):
+    def getTimes(self):
+        # TODO: Find out error here! Because this condition is meet it would
+        # mean that there are scenarios in which the timer are not stopped!
         print(len(self.userList), len(self.userStartTimesRaw), len(self.userEndTimesRaw))
         while len(self.userEndTimesRaw) < len(self.userStartTimesRaw):
             self.endTimer(None)
             print("Warning: End timer hasn't been stopped and had to be stopped manually")
-        # TODO: Find out error here 
 
-        df = pd.DataFrame({'user' : self.userList,'startTime' : self.userStartTimesRaw, 'endTime' : self.userEndTimesRaw})
+        df = pd.DataFrame({'user':      self.userList,
+                           'startTime': self.userStartTimesRaw, 
+                           'endTime':   self.userEndTimesRaw})
         df['executeTime'] = df['endTime'] - df['startTime']
         return df
 
