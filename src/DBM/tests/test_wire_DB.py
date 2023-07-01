@@ -41,6 +41,10 @@ class WireDBTest(unittest.TestCase):
             idx_pic = ids.index(pic_id_sylphid[i])
             self.assertTrue(np.allclose(img_np_sylphid[i], pics[idx_pic]))
 
+    def test_user_deletion_and_associated_resources(self):
+        self.assertRaises(UserDoesntExist, self.db.getTrainingPictures,
+                          uuid.uuid1())
+
     def test_insertion_for_non_existing_user(self):
         self.assertRaises(UserDoesntExist, self.db.insertTrainingPicture,
                           np.array([1,2,3]), uuid.uuid1())
