@@ -17,6 +17,7 @@ import datetime as dt
 from pytz import timezone
 from gridfs import GridFSBucket
 import pymongo
+import typing
 
 
 class BBDB:
@@ -152,7 +153,7 @@ class BBDB:
         login if it succeeds.
         """
         localTime = dt.datetime.now(tz=timezone('Europe/Amsterdam'))
-        if self._user.find_one({"_id":user_id}):
+        if self._user.find_one({"_id": str(user_id)}):
             self._login_attempt.insert_one({
                 "user_id" : str(user_id),
                 "date" : localTime,
@@ -205,14 +206,14 @@ class BBDB:
         try:
             self._login_attempt.update_one(
                 {
-                    "user_id": user_id,
+                    "user_id": str(user_id),
                     "date": time
                 },
                 { 
                     "$set" : {
-                    "login_suc": True,
-                    "success_resp_type": 0,
-                    "inserted_pic_uuid": str(inserted_pic_uuid),
+                        "login_suc": True,
+                        "success_resp_type": 0,
+                        "inserted_pic_uuid": str(inserted_pic_uuid),
                     }
                 })
             return inserted_pic_uuid
@@ -297,7 +298,7 @@ class BBDB:
             user_dict[uuid.UUID(user["_id"])] = user["username"]
         return user_dict
             
-    def getUserWithId(self, user_id: uuid.UUID) -> str:
+    def getUserWithId(self, user_id: uuid.UUID) -> typing.Optional[str]:
         """
         Returns the username corresponding to the user_id.
 
@@ -333,7 +334,7 @@ class BBDB:
             return True
         return False
 
-    def getUser(self, username: str) -> uuid.UUID:
+    def getUser(self, username: str) -> typing.Optional[uuid.UUID]:
         """
         Returns the uuid corresponding to the username.
 
@@ -404,7 +405,7 @@ class wire_DB(BBDB):
                 except pymongo.errors.DuplicateKeyError:
                     pass
 
-    def getTrainingPictures(self, user_uuid: uuid.UUID = None):
+    def getTrainingPictures(self, user_uuid: typing.Optional[uuid.UUID] = None):
         """
         Returns training pictures from the database from the wire resource context
         """
