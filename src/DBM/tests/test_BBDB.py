@@ -140,7 +140,7 @@ class BBDBTest(unittest.TestCase):
         # The pic uuid is assumed to be correct 
         inserted_pic_uuid = uuid.uuid1()
         self.assertEqual(
-                self.db.update_login(user_uuid=user_id, 
+                self.db.update_login(user_uuid=user_id,
                                      time=timestamp,
                                      inserted_pic_uuid=inserted_pic_uuid),
                 inserted_pic_uuid)
