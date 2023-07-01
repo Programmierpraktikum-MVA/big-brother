@@ -104,13 +104,9 @@ class BVGUI (tk.Frame):
 
         self.pW.update("guiInit","Initialising GUI...",60)
 
-        """
         self.pW.createProgressbar("FrameInit")
 
         #Initialize Windows
-
-
-
         self.pW.update("FrameInit","Initialising True Positive Viewer...",0)
         self.TPV = BVW.TPViewer(self,"visible")
         self.pW.update("FrameInit","Initialising True Positive Viewer...",25)
@@ -121,17 +117,11 @@ class BVGUI (tk.Frame):
         self.MV = BVW.MixedViewer(self,"hidden")
         self.pW.update("FrameInit","Initialising Mixed Viewer...",75)
         self.pW.finProgress("FrameInit")
-        """
-
-
-
         self.UV = BVW.UserViewer(self,"visible","UserViewer")
 
-        #self.BVWindows = [self.TPV,self.TNV,self.MV,self.UV]
-        self.BVWindows = [self.UV]
-
+        # add windows
+        self.BVWindows = [self.TPV,self.TNV,self.MV,self.UV]
         if platform.system() == 'Linux':
-
             self.OFTP = BVW.OFTPViewer(self,"hidden")
             self.pW.update("FrameInit","Initialising Openface True Positive Viewer...",100)
             self.pW.finProgress("FrameInit")
@@ -153,10 +143,8 @@ class BVGUI (tk.Frame):
         self.pW.finProgress("FrameInit")
         self.BVWindows.append(self.CV2TN)
 
-
         self.update()
 
-        #,self.OFTN,self.OFTP]
 
         #Configure Master Variables
         self.configureMaster()

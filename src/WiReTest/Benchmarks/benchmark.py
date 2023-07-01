@@ -53,18 +53,11 @@ class userRecog():
     #
 
     def __init__(self,username):
-
         self.username = username
-
         self.recogPictures = []
-
         self.trainPictures = []
-
         self.recogScores = None
-
         self.imgShape = None
-
-
 
 
 class benchRecog():
@@ -78,11 +71,17 @@ class benchRecog():
         # Since Benchmarks can take long the
         # Master Class can define a Progresswindow so the GUI doesnt freeze
         # and can update
-        #
+        
+        # tkinter elements
         self.master = None
         self.root = None
-        self.pW = None
+        self.pW = None          # progress window
+
         self.userLimit = 5
+        self.trainPictureAmount = 30
+        self.recogPictureAmount = 10
+
+        # initialize timers for respective tests
         self.TPUserTimer = BVU.UserTimer()
         self.TNUserTimer = BVU.UserTimer()
         self.CV2TPUserTimer = BVU.UserTimer()
@@ -90,29 +89,18 @@ class benchRecog():
         self.OFTPUserTimer = BVU.UserTimer()
         self.OFTNUserTimer = BVU.UserTimer()
         self.MixedUserTimer = BVU.UserTimer()
-        self.trainPictureAmount = 30
-        self.recogPictureAmount = 10
+
         self.exitFlag = False
         self.cv2Inst = cv2Recog()
 
-        #
         # Fetch optional Arguments
-        #
-
         for key, value  in kwargs.items():
-
-            #if key == 'pW':
-                #self.pW = value
-
             if key == 'root':
                 self.root = value
-
             if key == 'master':
                 self.master = value
-
             if key == 'userlimit':
                 self.userLimit = value
-
             if key == 'pW':
                 self.pW = value
                 self.pW.createProgressbar("benchProg")
@@ -120,16 +108,14 @@ class benchRecog():
         # Optimal Threshold Calculation
         self.threshold_calc = self.master.threshold_calc
 
-        #if self.root and self.master:
-            #self.pW = BVW.progresWindow(self.root,"Benchmark",self.master.windowDimension_x,self.master.windowDimension_y)
-            #self.pW.dropDown(self.root,self.master)
-
+        # update progress window
         if self.pW:
             self.pW.update("benchProg","Fetching Dataset...",0)
 
         #Fetch the Learning set from sklearn
         lfw_people = fetch_lfw_people(min_faces_per_person=self.trainPictureAmount, resize=1)
 
+        # update progress window
         if self.pW:
             self.pW.update("benchProg","Resizing Images...",30)
 
@@ -137,46 +123,32 @@ class benchRecog():
         imgs = lfw_people.images
         targets = lfw_people.target
         target_names = lfw_people.target_names
-        #print(len(targets))
 
         if target_names.size < self.userLimit:
-
             if tk.messagebox.askyesno("Benchmark","Only : {} users available, continue with {}?".format(target_names.size,target_names.size)):
-
                 self.userLimit = target_names.size
             else:
-
                 self.exitFlag = True
                 return
 
         resizedImgs = []
-
         self.image_shape = imgs[0].shape
 
-        #Resize images
+        # Resize images
         # Since WiRe Algo needs all images to be the same height and width
-
         for img in imgs:
-
-            #plt.imshow(cv2.resize(img, dsize=(98,116), interpolation=cv2.INTER_CUBIC).reshape((98 * 116)), cmap="Greys_r")
-            #plt.show()
-            #resizedImgs.append(cv2.resize(img, dsize=(116,98), interpolation=cv2.INTER_CUBIC).reshape((98 * 116)))
             resizedImgs.append(img.reshape((self.image_shape[1] * self.image_shape[0])))
 
+        # update progress window
         if self.pW:
             self.pW.update("benchProg","Building Image Data...",35)
 
         #Set up Dataframe for better Datamanagement
         # Dataframes provide many useful functions for Scientific Datamanipulation
         # Like sorting Indexing etc.
-
-        #print(len(list(map(lambda x: self.mapNamesToNumber(x,target_names),targets))))
-        #print(list(map(lambda x: target_names[x],targets)))
-
         self.df = pd.DataFrame(data = {'target' : targets,'name' : list(map(lambda x: target_names[x],targets)), 'img' : resizedImgs})
         self.df = self.df.set_index('target').sort_index()
-
-        #print(self.df)
+        print(self.df)
 
         self.FaceDetection = self.master.FaceDetection
 
@@ -198,7 +170,7 @@ class benchRecog():
         self.trainPictureCount = 0
 
         for index in range(self.userLimit):
-
+            # update progress window
             if self.pW:
                 self.pW.update("benchProg","Initialize Users...",35 + userFin / userCount * 65)
 
@@ -230,23 +202,17 @@ class benchRecog():
 
             userFin += 1
 
+        # update progress window
         if self.pW:
             self.pW.finProgress("benchProg")
-
-
 
         self.users = self.master.DbUsers
         self.dbUsers = self.master.DbUsers
 
         self.image_shape = self.master.imShape
 
-
-
-
-
     def modified_project_faces(self, pcs: np.ndarray, images: np.ndarray, mean_data: np.ndarray) -> np.ndarray:
         """
-
         Modified Method from WiRe Algo wich needed to be slightly Changed
 
         Project given image set into basis.
@@ -260,20 +226,16 @@ class benchRecog():
         coefficients: basis function coefficients for input images, each row contains coefficients of one image
         """
 
-        # TODO: initialize coefficients array with proper size
+        # initialize coefficients array with proper size
         coefficients = np.zeros((len(images), pcs.shape[0]))
 
         #mpl.pyplot.imshow(images[0], cmap="Greys_r")
         #mpl.pyplot.show()
 
-        # TODO: iterate over images and project each normalized image into principal component basis
         # Doesnt need to be executed, done in Benchmark Init
         #images = setup_data_matrix(images)
 
-
-        #
-        #Normalize
-        #
+        # Iterate over images and project each normalized image into principal component basis
 
         for img_index, img in enumerate(images):
             images[img_index] = images[img_index] - mean_data
@@ -309,16 +271,13 @@ class benchRecog():
         #coeffs_test = np.zeros((len(imgs_test),))
         #coeffs_test = project_faces(pcs, imgs_test, mean_data)
         """
-
         d_matrix = imgs_test
         test_pcs, test_sval, test_mean = main.calculate_pca(d_matrix)
         coeffs_test = self.modified_project_faces(pcs,imgs_test,mean_data)
 
-
-
-        # TODO: Initialize scores matrix with proper size
+        # Initialize scores matrix with proper size
         scores = np.zeros((coeffs_train.shape[0], coeffs_test.shape[0]))
-        # TODO: Iterate over all images and calculate pairwise correlation
+        # Iterate over all images and calculate pairwise correlation
         for img_index, coeff_test in enumerate(coeffs_test):
             for train_img_index, coeff_train in enumerate(coeffs_train):
                 scores[train_img_index][img_index] = np.arccos(np.dot(coeff_test,coeff_train)/(np.linalg.norm(coeff_test)*np.linalg.norm(coeff_train)))
@@ -326,8 +285,8 @@ class benchRecog():
         return scores, imgs_test, coeffs_test
 
     def wireAlgo(self,imgs_test,imgs_train):
-
-        pcs, sv, mean_data  = main.calculate_pca( imgs_train )
+        # TODO: Properly comment this section
+        pcs, sv, mean_data  = main.calculate_pca(imgs_train)
 
         cutoff_threshold = 0.8
 
@@ -355,7 +314,6 @@ class benchRecog():
         usernames = []
         recogUsernames = []
 
-        #random.shuffle(self.users)
         self.TNUserTimer.clear()
 
         for user_index,user_ in enumerate(self.users):
@@ -385,9 +343,7 @@ class benchRecog():
             # Running WiRe Algo on user
             #
             try:
-
                 scores = self.wireAlgo(imgs_test ,imgs_train)
-
             except ValueError:
                 return
 
