@@ -795,6 +795,7 @@ class benchRecog():
                 recogImageScores.append(recognisedImageScore)
                 usernames.append(user_.username)
 
+            # TODO: Find out what it does
             # Data to calculate optimal Threshold
             # we're in true positive case so all labels are True
             labels = np.full(shape=(len(imgs_train),len(imgs_test)), 

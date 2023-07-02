@@ -42,11 +42,8 @@ class Threshold_Calc:
             data = self.data
             labels = self.labels
 
-        #ind = np.where(data <= threshold & labels == True, [True], [False])
-        #np.count_nonzero(data <= threshold )
         under_threshold = (data <= threshold)
         bool_arr = np.logical_and(under_threshold, labels)
-
         return np.sum(bool_arr)
 
     def get_num_tn(self, threshold: float, data = None, labels = None) -> int:
@@ -93,8 +90,8 @@ class Threshold_Calc:
             data = self.data
             labels = self.labels
 
-        tp = self.get_num_tp(threshold, data = data, labels =  labels)
-        fn = self.get_num_fn(threshold, data = data, labels =  labels)
+        tp = self.get_num_tp(threshold, data = data, labels = labels)
+        fn = self.get_num_fn(threshold, data = data, labels = labels)
         return tp / (tp + fn)
 
 
@@ -109,7 +106,9 @@ class Threshold_Calc:
 
         tp = self.get_num_tp(threshold, data = data, labels = labels)
         fp = self.get_num_fp(threshold, data = data, labels = labels)
-
+        #print(tp)
+        #print(fp)
+    
         return tp / (tp + fp)
 
     def calc_f_score(self, threshold: float, f_score_level=1, data = None, labels = None) -> float:
@@ -125,7 +124,6 @@ class Threshold_Calc:
         prec = self.calc_precision(threshold, data = data, labels =labels)
         rec = self.calc_recall(threshold, data = data, labels = labels)
         score = (1 + beta_sqr) * ((prec * rec) / ((beta_sqr * prec) + rec))
-
         return score
 
     def calc_threshold_range(self, min_threshold = 0, max_threshold = 0, step_num = 10, data = None) -> list:
@@ -155,7 +153,12 @@ class Threshold_Calc:
         f_scores = np.zeros((len(tested_thresholds),))
 
         for i, threshold in enumerate(tested_thresholds):
-            f_scores[i] = self.calc_f_score(threshold, f_score_level=f_score_level, data=data, labels=labels)
+            f_scores[i] = self.calc_f_score(
+                    threshold, 
+                    f_score_level=f_score_level, 
+                    data=data, 
+                    labels=labels
+                )
 
         max_f_score = np.max(f_scores)
         calc_threshold = tested_thresholds[np.argmax(f_scores)]
@@ -188,8 +191,14 @@ class Threshold_Calc:
             data = self.data
             labels = self.labels
 
+        print(data, labels)
         tested_thresholds = self.get_thres_range()
-        thres, f_score = self.threshold_with_max_f_score(tested_thresholds, f_score_level=f_score_level, data = data, labels=labels)
+        thres, f_score = self.threshold_with_max_f_score(
+                tested_thresholds, 
+                f_score_level=f_score_level, 
+                data=data, 
+                labels=labels
+            )
         print(f"Calculated optimal threshold with maximum f_{f_score_level}-score is: {thres} and has a f-score of {f_score}")
         print()
 
