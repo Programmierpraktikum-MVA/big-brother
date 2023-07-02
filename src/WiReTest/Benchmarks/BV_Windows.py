@@ -509,17 +509,17 @@ class GraphViewer(BVWindow):
 
         #Plot Mean
         mean = y.mean()
-        plt.plot([x.iloc[0],x[-1:]],[mean,mean])
+        plt.plot([x.iloc[0],x.iloc[-1:]],[mean,mean])
         plt.text(x.iloc[0],mean, "Mean : {}".format(round(mean,4)), fontsize=10)
 
         #Plot Max
         max = y.max()
-        plt.plot([x.iloc[0],x[-1:]],[max,max])
+        plt.plot([x.iloc[0],x.iloc[-1:]],[max,max])
         plt.text(x.iloc[0],max, "Max : {}".format(round(max,4)), fontsize=10)
 
         #Plot Min
         min = y.min()
-        plt.plot([x.iloc[0],x[-1:]],[min,min])
+        plt.plot([x.iloc[0],x.iloc[-1:]],[min,min])
         plt.text(x.iloc[0],min, "Min : {}".format(round(min,4)), fontsize=10)
 
         plt.xlabel(self.plotPrettyLabel)
