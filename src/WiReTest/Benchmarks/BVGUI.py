@@ -42,40 +42,32 @@ if platform.system() == 'Linux':
     from FaceDetectionClass import FaceDetection
 
 
-#
-# GUI Class System
-# Naming Convention:
-# BVGUI = Benchmark Viewer Graphical User Interface
 
 class BVGUI (tk.Frame):
     """
-    Benchmark Viewer
+    Benchmark Viewer Graphical User Interface
     BVGUI:
         Type Master class:
-            Managages displaying of Windows
-            Managages Data from foreign Dataset
-            Configures Main GUI Variables
-            Has control over tk.root
+            - Managages displaying of Windows
+            - Managages Data from foreign Dataset
+            - Configures Main GUI Variables
+            - Has control over tk.root
     """
     def __init__(self, master):
 
-        #Init Master
+        # Init Master
         self.master = master
 
         self.master.withdraw()
         tk.Frame.__init__(self, self.master)
 
-        #Init global Variables
-        #Set Window Dimensions
+        self.updateFunctions = []
+        self.DB = DBM.wire_DB()
+        self.exitFlag = False
 
+        # Set Window Dimensions
         self.windowDimension_x = 1500
         self.windowDimension_y = 600
-
-        self.updateFunctions = []
-
-        self.DB = DBM.wire_DB()
-
-        self.exitFlag = False
 
         # Optimal Threshold Calculation
         self.threshold_calc = Threshold_Calc(data = None, labels = None)
@@ -86,15 +78,13 @@ class BVGUI (tk.Frame):
 
         self.FaceDetection = None
         if platform.system() == 'Linux':
-
             self.FaceDetection = FaceDetection()
         #self.pW.dropDown(self.master,self)
 
-        #Update progress window with custom text and progressbar position
-
+        # Update progress window with custom text and progressbar position
         self.pW.update("guiInit","Initialising Benchmarks...",0)
 
-        #Init Benchmark Class
+        # Init Benchmark Class
         self.DbUsers = self.fetchDatabaseUsers()
         self.bR = benchRecog(root = self.master,master = self,pW = self.pW)
         self.update()
@@ -102,50 +92,35 @@ class BVGUI (tk.Frame):
 
         self.pW.update("guiInit","Done...",85)
 
-        self.pW.update("guiInit","Initialising GUI...",60)
-
-        self.pW.createProgressbar("FrameInit")
-
         # Initialize windows
-        self.pW.update("FrameInit","Initialising True Positive Viewer...",0)
+        self.pW.createProgressbar("FrameInit")
+        self.pW.update("FrameInit","Initialising True Positive Viewer...", 0)
         self.TPV = BVW.TPViewer(self,"visible")
-        self.pW.update("FrameInit","Initialising True Positive Viewer...",25)
-        self.pW.update("FrameInit","Initialising True Negative Viewer...",25)
+        self.pW.update("FrameInit","Initialising True Negative Viewer...", 15)
         self.TNV = BVW.TNViewer(self,"hidden")
-
-        self.pW.update("FrameInit","Initialising True Negative Viewer...",50)
-        self.pW.update("FrameInit","Initialising Mixed Viewer...",50)
+        self.pW.update("FrameInit","Initialising Mixed Viewer...", 30)
         self.MV = BVW.MixedViewer(self,"hidden")
-        self.pW.update("FrameInit","Initialising Mixed Viewer...",75)
-        self.pW.finProgress("FrameInit")
+        self.pW.update("FrameInit","Initialising User Viewer...", 45)
         self.UV = BVW.UserViewer(self,"visible","UserViewer")
-
-        self.pW.update("FrameInit","Initialising CV2",75)
+        self.pW.update("FrameInit","Initialising CV2 True Positive Viewer...", 60)
         self.CV2TP = BVW.CV2TPViewer(self,"hidden")
-        self.pW.update("FrameInit","Initialising CV2 True Positive Viewer...",75)
-        self.pW.finProgress("FrameInit")
-
+        self.pW.update("FrameInit","Initialising CV2 True Negative Viewer...", 75)
         self.CV2TN = BVW.CV2TNViewer(self,"hidden")
-        self.pW.update("FrameInit","Initialising CV2 True Negative Viewer...",100)
-        self.pW.finProgress("FrameInit")
-
-        # add viewers that are available on all systems
+        ## add viewers that are available on all systems
         self.BVWindows = [
                 self.TPV, self.TNV, self.MV, self.UV,
                 self.CV2TP, self.CV2TN,
              ]
-
-        # linux specific windows
+        ## linux specific windows
         if platform.system() == 'Linux':
             self.OFTP = BVW.OFTPViewer(self,"hidden")
-            self.pW.update("FrameInit","Initialising Openface True Positive Viewer...",100)
-            self.pW.finProgress("FrameInit")
+            self.pW.update("FrameInit","Initialising Openface True Positive Viewer...", 87)
             self.BVWindows.append(self.OFTP)
 
             self.OFTN = BVW.OFTNViewer(self,"hidden")
             self.pW.update("FrameInit","Initialising Openface True Negative Viewer...",100)
-            self.pW.finProgress("FrameInit")
             self.BVWindows.append(self.OFTN)
+        self.pW.finProgress("FrameInit")
 
         self.update()
 
@@ -156,8 +131,6 @@ class BVGUI (tk.Frame):
         self.pW.finProgress("guiInit")
 
         self.master.deiconify()
-
-
 
     def configureMaster(self):
 
@@ -321,7 +294,6 @@ class BVGUI (tk.Frame):
                 user_uuids.append(key)
 
             self.pW.update("bbInit","Fetching Big Brother Users : {}".format(value),(counter / len(userDict)) * 100)
-        print(len(user_uuids),len(pic_uuids),len(pics))
         for pic_index, pic in enumerate(pics):
 
             #flattened = pic.reshape(pic.shape[0] * pic.shape[1])
@@ -357,7 +329,6 @@ class BVGUI (tk.Frame):
 
             #t_user_uuids, new_pic_uuids, user_pics = UserPicDf[UserPicDf['user_uuid'] == user_uuid]
             user_pics = UserPicDf[UserPicDf.index == user_uuid]
-            #print(user_pics)
 
             for index in range(len(user_pics)):
                 # TODO: is 3 the number of images? Or what does this magic number
@@ -366,9 +337,6 @@ class BVGUI (tk.Frame):
                     recogPictureNum += 1
                 else:
                     trainPictureNum +=  1
-
-            #print("RecogNum: ",recogPictureNum)
-            #print("TrainNum: ",trainPictureNum)
 
             testPicToTrainPicRatio = 0.2
             picNum = len(user_pics)
@@ -387,7 +355,6 @@ class BVGUI (tk.Frame):
                 if pic.shape[0] == 0 or pic.shape[1] == 0:
                     #create empty pic if its corrupted
                     pic = np.random.randint(255, size=(maxShape[0],maxShape[1],3),dtype=np.uint8)
-                #print(pic.shape)
                 resizedPic = cv2.resize(pic.astype("uint8"), dsize=(maxShape[1],maxShape[0]), interpolation=cv2.INTER_CUBIC).flatten()
 
                 #if index < recogPictureNum:
@@ -411,20 +378,14 @@ class BVGUI (tk.Frame):
             if len(user.trainPictures) < minTrain:
                 minTrain = len(user.trainPictures)
                 minUserTrain = user
-        #print("minUserRecog: ",minUserRecog.username)
-        #print("minUserTrain: ",minUserTrain.username)
-        #print("minRecog: ",minRecog)
-        #print("minRecog: ",minTrain)
 
         #Crop the final user
         finalUserList = []
         for key, user in newUserDict.items():
-            print(key)
             finalUser = userRecog(user.username)
             finalUser.recogPictures = user.recogPictures[:minRecog]
             finalUser.trainPictures = user.trainPictures[:minTrain]
             finalUser.imgShape = user.imgShape
-            #print("user : {}\nLen recog: {}\n len train: {}".format(user.username,len(finalUser.recogPictures),len(finalUser.trainPictures)))
             finalUserList.append(finalUser)
 
         return finalUserList

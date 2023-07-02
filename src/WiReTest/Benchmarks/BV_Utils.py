@@ -73,10 +73,9 @@ class UserTimer(BenchmarkTimer):
     def getTimes(self):
         # TODO: Find out error here! Because this condition is meet it would
         # mean that there are scenarios in which the timer are not stopped!
-        print(len(self.userList), len(self.userStartTimesRaw), len(self.userEndTimesRaw))
         while len(self.userEndTimesRaw) < len(self.userStartTimesRaw):
             self.endTimer(None)
-            print("Warning: End timer hasn't been stopped and had to be stopped manually")
+            print("WARNING: End timer hasn't been stopped and had to be stopped manually")
 
         df = pd.DataFrame({'user':      self.userList,
                            'startTime': self.userStartTimesRaw, 
