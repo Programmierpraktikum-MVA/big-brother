@@ -241,13 +241,13 @@ class BBDB:
             log.append([login["date"], login["success_res_id"]])
         return log
 
-    def register_user(self, username: str, user_enc_res_id: uuid.UUID):
+    def register_user(self, username: str, user_enc: np.ndarray):
         """
         Creates a new user in the database with the given username.
 
         Arguments:
         username -- The username of the new user.
-        user_enc_res_id -- user_enc_res_id of the user (identifier from opencv)
+        user_enc -- encoding of the user.
 
         Return:
         If the user has been successfully registered then it returns the
@@ -256,6 +256,8 @@ class BBDB:
         Exception:
         Raises an exception if the username already exists.
         """
+        if user_enc is None:
+            user_enc = np.array([])
         if self._user.find_one({"username" : username}):
             raise UsernameExists("Username in use!")
 
@@ -265,12 +267,97 @@ class BBDB:
                 self._user.insert_one({
                     "_id": str(new_uuid),
                     "username" : username, 
-                    "user_enc_res_id" : str(user_enc_res_id),
+                    "user_enc_res_id" : None,
                     "is_admin" : False})
                 break
             except pymongo.errors.DuplicateKeyError:
                 new_uuid = uuid.uuid4()
+
+        # if creating the encoding has errors then it would need to be handled seperately
+        for _ in range(self._RETRY_AFTER_FAILURE):
+            try: 
+                self._user.insert_one({
+                    "_id": str(new_uuid),
+                    "username" : username, 
+                    "user_enc_res_id" : None,
+                    "is_admin" : False})
+                break
+            except pymongo.errors.DuplicateKeyError:
+                new_uuid = uuid.uuid4()
+
+        updated_uuid = self.update_user_enc(new_uuid, user_enc)
+        self._user.update_one(
+                {"_id": str(new_uuid)}, 
+                {"$set": {"user_enc_res_id": str(updated_uuid)}}
+            )
+
         return new_uuid
+
+    def update_user_enc(self, user_uuid: uuid.UUID, user_enc: np.ndarray):
+        """
+        Updates the user encoding of a user.
+
+        Arguments:
+        user_uuid: id of the user.
+        user_enc: The user encoding to update.
+
+        Return:
+        Returns the uuid of the encoding that has been inserted.
+
+        Exception:
+        Raises a TypeError if the inputted encoding isn't a numpy array and
+        raises a UserDoesntExist exception if the uuid doesn't belong to an
+        existing user.
+        """
+        # TODO: Perhaps write some more tests for this functionality.
+        if type(user_enc) != np.ndarray:
+            raise TypeError
+        if not self.checkUserIDExists(user_uuid):
+            raise UserDoesntExist("The user doesn't exist.")
+
+
+        # deleting old encoding
+        enc_uuid = self._user.find_one({"_id" : str(user_uuid)})["user_enc_res_id"]
+        if enc_uuid:
+            self._resource.delete_one({"_id": str(enc_uuid)})
+
+        # inserting new encoding
+        ## if there was an encoding uuid before then we can continue to use it,
+        ## because we already deleted the old version
+        if not enc_uuid:
+            enc_uuid = uuid.uuid4()
+        for _ in range(self._RETRY_AFTER_FAILURE):
+            try: 
+                # TODO: Does it need to be stored with gridFS?
+                self._resource.insert_one({
+                    "_id" : str(enc_uuid),
+                    "user_id": str(user_uuid),
+                    "res" : pickle.dumps(user_enc),
+                    "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
+                })
+                break
+            except pymongo.errors.DuplicateKeyError:
+                enc_uuid = uuid.uuid4()
+        return enc_uuid
+
+    def get_user_enc(self, user_uuid: uuid.UUID) -> np.ndarray:
+        """
+        Get the user encoding from a certain user.
+
+        Arguments:
+        user_uuid: The ID of the user.
+
+        Return:
+        Returns user encoding.
+
+        Exception:
+        Raises UserDoesntExist exception if the user doesn't exist.
+        """
+        if not self.checkUserIDExists(user_uuid):
+            raise UserDoesntExist("The user doesn't exist.")
+
+        resource = self._user.find_one({"_id": str(user_uuid)})
+        return pickle.loads(resource("res"))
 
     def getUsers(self, limit=-1):
         """
@@ -461,7 +548,6 @@ class wire_DB(BBDB):
                     "user_id": str(user_uuid),
                     "res" : pickle.dumps(pic),
                     "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
-                    "pic_uuid": str(pic_uuid)
                 })
                 break
             except pymongo.errors.DuplicateKeyError:
