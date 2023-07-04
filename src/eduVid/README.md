@@ -1,48 +1,48 @@
-## Requirements
+# Requirements
 
-# OpenCV
+## OpenCV
 ```bash
   pip install opencv-python
 ```
 
-# Tesseract 
+## Tesseract 
 ```bash
 The installation proceeds differently depending on the operating system.
 ```
 detailed [instructions](https://github.com/tesseract-ocr/tesseract)
 
-# The Natural Language Toolkit (NLTK)
+## The Natural Language Toolkit (NLTK)
 ```bash
 pip install nltk
 ```
 
-# Rapid Automatic Keyword Extraction (RAKE)
+## Rapid Automatic Keyword Extraction (RAKE)
 ```bash
 pip install rake-nltk
 ```
 
-# Tkinter
+## Tkinter
 ```bash
 pip install tk
 ```
 
-# VLC
+## VLC
 ```bash
 pip install python-vlc
 ```
 ! also needs to be installed locally
 
-# openai-whisper
+## openai-whisper
 ```bash
 pip install openai-whisper
 ```
 
-# moviepy
+## moviepy
 ```bash
 pip install moviepy
 ```
 
-# FFmpeg
+## FFmpeg
 ```bash
 The installation proceeds differently depending on the operating system.
 ```
