@@ -1,6 +1,6 @@
 opencv-python==4.7.0.72
 nltk==3.8.1
-rake-nltk==1.06
+rake-nltk==1.0.6
 python-vlc==3.0.18122
 openai-whisper==20230314
 moviepy==1.0.3
