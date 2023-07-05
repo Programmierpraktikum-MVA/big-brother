@@ -9,6 +9,7 @@ import io
 from PIL import Image
 import numpy as np
 import pickle
+from pymongo import MongoClient
 
 
 class BigBrotherUser(UserMixin):
@@ -41,7 +42,7 @@ class BigBrotherUser(UserMixin):
         self.recogFlag = False
 
     def sync(self):
-        pics, uuids = self.DB.getTrainingPictures("WHERE user_uuid = '{}'".format(self.uuid))
+        pics, uuids = self.DB.getTrainingPictures(user_uuid = self.uuid)
         self.trainingPicturesWebsiteFormat = []
 
         for pic_index,pic in enumerate(pics):
@@ -63,36 +64,22 @@ class BigBrotherUser(UserMixin):
                 print(pic.astype('uint8').shape)
                 return
 
-        # TODO: Implement the same functionality in mongoDB
-        # This is only the log data associated to self.uuid
-        '''
-        self.DB.DBCursor.execute("SELECT login_date, inserted_pic_uuid FROM shared.login_table WHERE user_uuid = '{}'".format(self.uuid))
-        try:
-            self.logData = self.DB.DBCursor.fetchall()
-        except Exception:
-            return
-
-        for row_index, row in enumerate(self.logData):
-            print(self.logData[row_index][0])
-            self.logData[row_index] = [self.logData[row_index][0].strftime("%d/%m/%Y, %H:%M:%S"),row[1]]
-        '''
-
-        # TODO: Implement the same functionality in mongoDB
-        '''
-        self.childUser = []
-        query = """
-        SELECT * FROM shared.admin_table;
+        self.logData = self.DB.getLoginLogOfUser(user_uuid=self.uuid)
+        print(self.logData)
+        # TODO: Setting permissions for admin?
         """
-        self.DB.DBCursor.execute(query)
+        admin_collection = self.DB['admin_table']
+        query = {"admin_uuid": str(self.uuid)}
+        result = admin_collection.find(query)
 
-        ret = self.DB.DBCursor.fetchall()
-
-        for dbTuple in ret:
-            if dbTuple[0] == str(self.uuid):
-                self.admin = True
-                self.childUser.append(dbTuple[1])
-        '''
-
+        self.childUser = []
+        for document in result:
+            child_user = document['child_user']
+            self.admin = True
+            self.childUser.append(child_user)
+        """
+        self.childUser = []
+       
     def get_id(self):
         return self.uuid
 
