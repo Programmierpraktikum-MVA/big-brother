@@ -1,20 +1,20 @@
-# Requirements
+# Requirements (auto)
 ```bash
   pip install requirements
 ```
-## Tesseract 
+## Tesseract  (manual)
 ```bash
 The installation proceeds differently depending on the operating system.
 ```
 detailed [instructions](https://github.com/tesseract-ocr/tesseract)
 
-## FFmpeg
+## FFmpeg (manual)
 ```bash
 The installation proceeds differently depending on the operating system.
 ```
 detailed [instructions](https://ffmpeg.org)
 
-## Modules:
+## List of modules:
 OpenCV
 ```bash
   pip install opencv-python
