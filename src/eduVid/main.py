@@ -3,8 +3,8 @@ import sys
 import whisper
 
 sys.path.append(os.path.join(os.path.dirname(__file__), 'processes'))
-from slide_extractor import SlideExtractor
-from ocr import SlideOCR
+from slides_extractor import SlideExtractor
+from slides_ocr import SlideOCR
 from summarization import TextSummarizer
 from keyword_extractor import KeywordExtractor
 from speech2text import VideoScript
