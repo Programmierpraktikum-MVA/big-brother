@@ -49,7 +49,7 @@ $(document).ready(function(){
     var dataURL = canvas.toDataURL('image/jpeg');
 
     var request = new XMLHttpRequest();
-    request.open('POST', '/sendcamerapicture')
+    request.open('POST', '/verifypicture')
     request.setRequestHeader('Content-Type', 'application/json');
 
     var data = {
@@ -58,19 +58,18 @@ $(document).ready(function(){
     var json = JSON.stringify(data);
 
     request.onload = function () {
-      if(request.status === 200) {
+      if(request.status === 200)
         console.log("Success");
-      } else {
+      else
         console.log("Error:", request.status)
-      }
     };
 
     request.send(json);
 
-    // var link = document.createElement('a');
-    // link.href = dataURL;
-    // link.download = 'snapshot.jpeg';
-    // link.click();
+    //var link = document.createElement('a');
+    //link.href = dataURL;
+    //link.download = 'snapshot.jpeg';
+    //link.click();
   }
 
   // Starte den Timer beim Laden der Seite

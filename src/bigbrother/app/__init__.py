@@ -736,9 +736,19 @@ def createcamera():
 
     return render_template('createcamera.html', title='Create an account', form = form)
 
-@application.route('/sendcamerapicture', methods=['GET', 'POST'])
-def sendCameraPicture():
-    return render_template('webcamCreate.html', title='Camera')
+@application.route('/verifypicture', methods=['GET', 'POST'])
+def verifyPicture():
+
+    if request.method == 'POST':
+
+        data = request.get_json()
+        imgData = data.get('image')
+
+        print(data)
+        print("-------")
+        print(imgData)
+
+    return render_template("team.html")
     #return render_template('userpage.html', title='test')
 
 def registerUser(username, pictures):
