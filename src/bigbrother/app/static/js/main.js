@@ -48,10 +48,29 @@ $(document).ready(function(){
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     var dataURL = canvas.toDataURL('image/jpeg');
 
-    var link = document.createElement('a');
-    link.href = dataURL;
-    link.download = 'snapshot.jpeg';
-    link.click();
+    var request = new XMLHttpRequest();
+    request.open('POST', '/sendcamerapicture')
+    request.setRequestHeader('Content-Type', 'application/json');
+
+    var data = {
+      image: dataURL
+    };
+    var json = JSON.stringify(data);
+
+    request.onload = function () {
+      if(request.status === 200) {
+        console.log("Success");
+      } else {
+        console.log("Error:", request.status)
+      }
+    };
+
+    request.send(json);
+
+    // var link = document.createElement('a');
+    // link.href = dataURL;
+    // link.download = 'snapshot.jpeg';
+    // link.click();
   }
 
   // Starte den Timer beim Laden der Seite

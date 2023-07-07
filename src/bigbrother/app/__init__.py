@@ -736,7 +736,10 @@ def createcamera():
 
     return render_template('createcamera.html', title='Create an account', form = form)
 
-
+@application.route('/sendcamerapicture', methods=['GET', 'POST'])
+def sendCameraPicture():
+    return render_template('webcamCreate.html', title='Camera')
+    #return render_template('userpage.html', title='test')
 
 def registerUser(username, pictures):
     user = {
@@ -768,13 +771,13 @@ def registerUser(username, pictures):
 
             print("'{}' already exists!".format(username),file=sys.stdout)
 
-            rejectionDict['reason'] = "Benutzername '{}' nicht Verfügbar".format(username)
+            #rejectionDict['reason'] = "Benutzername '{}' nicht Verfügbar".format(username)
 
             #return render_template('rejection.html',  rejectionDict = rejectionDict, title='Reject', form=form)
-            emit('redirect', {'url' : '/rejection'});
+            emit('redirect', {'url' : '/rejection'})
 
     #return render_template('validationsignup.html', name=user['username'])
-    emit('redirect', {'url' : '/validationsignup'});
+    emit('redirect', {'url' : '/validationsignup'})
     return
 
 """
