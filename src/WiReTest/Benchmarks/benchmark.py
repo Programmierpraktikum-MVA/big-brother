@@ -895,8 +895,10 @@ class benchRecog():
             }).set_index('recogImageIndex').sort_values(by='testImageIndex')
 
         # Calculate optimal threshold (for this data)
-        f_score_level = 0.25  # recall is x times as important as precision
-        self.threshold_calc.set_thres_range(min_threshold = 160, max_threshold = 185, step_num = 300)  #choose more accurately with smaller range and/or more steps
+        # To prioritize precision, you can set a smaller beta value such as 0.5
+        # To prioritize recall, you can set a larger beta value such as 2.
+        f_score_level = 1  # Beta = 1 is the default value. (prev. one was 0.25, which prioritised precision over recall)
+        self.threshold_calc.set_thres_range(min_threshold = 160, max_threshold = 185, step_num = 300)  # choose more accurately with smaller range and/or more steps
         self.threshold_calc.calc_and_print_results(f_score_level)
 
         return recogScores
