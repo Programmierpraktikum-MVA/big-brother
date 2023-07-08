@@ -54,8 +54,8 @@ class userRecog():
 
     def __init__(self,username):
         self.username = username
-        self.recogPictures = []
-        self.trainPictures = []
+        self.recogPictures = [] # 10
+        self.trainPictures = [] # 20
         self.recogScores = None
         self.imgShape = None
 
@@ -801,7 +801,12 @@ class benchRecog():
             labels = np.full(shape=(len(imgs_train),len(imgs_test)), 
                              fill_value=True, 
                              dtype=bool)
+            #self.threshold_calc = Threshold_Calc(None, None)
             self.threshold_calc.add_data_and_labels(scores, labels)
+            f_score_level = 1
+            self.threshold_calc.set_thres_range(min_threshold=0, max_threshold=300,
+                                                step_num=300)  # choose more accurately with smaller range and/or more steps
+            self.threshold_calc.calc_and_print_results(f_score_level)
 
             userFin += 1
             self.CV2TPUserTimer.endTimer(user_)
@@ -878,8 +883,9 @@ class benchRecog():
             # Data to calculate optimal Threshold
             # We're in true positive case so all labels are True
             labels = np.full(shape=(len(imgs_train), len(imgs_test)), 
-                             fill_value=False, 
+                             fill_value=False,
                              dtype=bool)
+            #self.threshold_calc = Threshold_Calc(None, None)
             self.threshold_calc.add_data_and_labels(scores, labels)
 
         if self.pW:
@@ -898,7 +904,7 @@ class benchRecog():
         # To prioritize precision, you can set a smaller beta value such as 0.5
         # To prioritize recall, you can set a larger beta value such as 2.
         f_score_level = 1  # Beta = 1 is the default value. (prev. one was 0.25, which prioritised precision over recall)
-        self.threshold_calc.set_thres_range(min_threshold = 160, max_threshold = 185, step_num = 300)  # choose more accurately with smaller range and/or more steps
+        self.threshold_calc.set_thres_range(min_threshold = 0, max_threshold = 300, step_num = 300)  # choose more accurately with smaller range and/or more steps
         self.threshold_calc.calc_and_print_results(f_score_level)
 
         return recogScores
