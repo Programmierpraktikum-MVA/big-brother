@@ -65,8 +65,8 @@ class Threshold_Calc:
         if not isinstance(data, np.ndarray) or not isinstance(labels, np.ndarray):
             data = self.data
             labels = self.labels
-        under_threshold = (data <= threshold)
-        bool_arr = np.logical_and(under_threshold, np.invert(labels))
+        under_threshold = (data > threshold)
+        bool_arr = np.logical_and(under_threshold, labels)
         return np.sum(bool_arr)
 
     def get_num_fn(self, threshold: float, data = None, labels = None) -> int:
@@ -77,8 +77,8 @@ class Threshold_Calc:
             data = self.data
             labels = self.labels
 
-        over_threshold = (data > threshold)
-        bool_arr = np.logical_and(over_threshold, labels)
+        over_threshold = (data <= threshold)
+        bool_arr = np.logical_and(over_threshold, np.invert(labels))
         return np.sum(bool_arr)
 
     def calc_recall(self, threshold: float, data = None, labels = None) -> float:
@@ -207,7 +207,6 @@ class Threshold_Calc:
             data = self.data
             labels = self.labels
 
-        print(data, labels)
         tested_thresholds = self.get_thres_range()
         thres, f_score = self.threshold_with_max_f_score(
                 tested_thresholds,
