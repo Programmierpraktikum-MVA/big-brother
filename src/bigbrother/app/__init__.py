@@ -28,11 +28,13 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','WiReTest'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition','haar_and_lbph'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','DBM'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','Logik'))
 #from modifiedFaceRecog import recogFace
 #from face_rec_main import train_add_faces, authorize_faces
 #from main import load_images as load_test_imgs
 import FaceDetection
 #from app import routes
+import Face_Recognition.FaceReco_class as LogikFaceRec
 
 from flask import render_template, flash, redirect, url_for
 
@@ -51,6 +53,7 @@ import uuid
 import DatabaseManagement as DBM
 import matplotlib as mpl
 import cv2
+import cv2.misc
 import time
 import logging
 import base64
@@ -744,9 +747,16 @@ def verifyPicture():
         data = request.get_json()
         imgData = data.get('image')
 
-        print(data)
-        print("-------")
-        print(imgData)
+        imgDecoded = cv2.imdecode(
+            np.fromstring(base64.b64decode(imgData), dtype=np.uint8),
+            cv2.IMREAD_COLOR
+        )
+
+        (checkResult, ignore) = LogikFaceRec.FaceReco.photo_to_photo(imgDecoded, imgDecoded)
+        print(checkResult)
+
+    else:
+        print(cv2.misc.version)
 
     return render_template("team.html")
     #return render_template('userpage.html', title='test')
