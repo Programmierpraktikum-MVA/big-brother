@@ -66,7 +66,15 @@ $(document).ready(function(){
 
     request.onload = function () {
       if(request.status === 200)
+      {
         console.log("Picture has been send successfully");
+        var response = JSON.parse(request.responseText)
+        var url = new URL(response.redirect, window.location.href);
+        for (var key in response.data) {
+          url.searchParams.append(key, response.data[key]);
+        }
+        window.location.href = url.href;
+      }
       else
         console.log("Error while sending picture: ", request.status)
     };
