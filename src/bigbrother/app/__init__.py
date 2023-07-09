@@ -752,7 +752,7 @@ def createcamera():
     return render_template('createcamera.html', title='Create an account', form = form)
 
 
-@application.route('/verifypicture', methods=['POST'])
+@application.route('/verifypicture', methods=['GET', 'POST'])
 def verifyPicture():
 
     #return render_template('team.html')
@@ -804,13 +804,12 @@ def verifyPicture():
 
             #for user_img in imgs_raw:
             rgb_img = cv2.cvtColor(imgs_raw[1], cv2.COLOR_BGR2RGB)
-
             image_encoding = face_recognition.face_encodings(rgb_img)
 
             (results, _) = logik.photo_to_photo(image_encoding[0], camera_img)
             print(results)
 
-            if results:
+            if results[0]:
 
                 thisUser = BigBrotherUser(user_uuid, user['username'], ws.DB)
                 flask_login.login_user(thisUser)
