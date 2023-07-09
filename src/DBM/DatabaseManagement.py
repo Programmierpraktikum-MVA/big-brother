@@ -8,7 +8,7 @@ can Import and Export Pictures from Database
 @Project: ODS-Praktikum-Big-Brother
 @Filename: new_database_management.py
 @Last modified by:   Julian Flieller
-@Last modified time: 2023-05-31
+@Last modified time: 2023-06-16
 """
 import numpy as np
 import pickle
@@ -17,6 +17,7 @@ import datetime as dt
 from pytz import timezone
 from gridfs import GridFSBucket
 import pymongo
+import typing
 
 
 class BBDB:
@@ -40,6 +41,10 @@ class BBDB:
         else: 
             self.cluster = mongo_client
 
+        # Constants
+        self._RETRY_AFTER_FAILURE = 10
+
+        # Values
         self._db = self.cluster["BigBrother"]
         self._user = self._db["user"]
         self._login_attempt = self._db["login_attempt"]
@@ -52,12 +57,6 @@ class BBDB:
         """
         self.cluster.close()
     
-    def closeGraceful(self):
-        """
-        not needed for mongodb
-        """
-        self.close()
-
     def closeGraceful(self):
         """
         not needed for mongodb
@@ -104,7 +103,7 @@ class BBDB:
         print("WARNING: AddAdminRelation Failed!")
         return False
 
-    def checkUserIDExists(self, uuid: uuid.UUID):
+    def checkUserIDExists(self, uuid: typing.Optional[uuid.UUID]):
         """
         Checks whether a certain uuid already exists.
 
@@ -130,13 +129,16 @@ class BBDB:
         Return:
         Returns the a list of usernames that correspond to the user_uuid
         that have been inputted. The index i of the return list corresponds
-        to uuids[i] in the input.
+        to uuids[i] in the input. It a uuid doesn't belong to any user then None 
+        is returned for the entry.
         """
         usernames = []
         for user_id in uuids:
-            user_data = self._user.find_one({"_id": str(user_id)})
-            if user_data is not None:
-                usernames.append(user_data["username"])
+            entries = self._user.find_one({"_id": str(user_id)})
+            entry = None
+            if entries:
+                entry = entries["username"]
+            usernames.append(entry)
         return usernames
 
     def login_user(self, user_id: uuid.UUID):
@@ -151,7 +153,7 @@ class BBDB:
         login if it succeeds.
         """
         localTime = dt.datetime.now(tz=timezone('Europe/Amsterdam'))
-        if self._user.find_one({"_id":user_id}):
+        if self._user.find_one({"_id": str(user_id)}):
             self._login_attempt.insert_one({
                 "user_id" : str(user_id),
                 "date" : localTime,
@@ -204,14 +206,14 @@ class BBDB:
         try:
             self._login_attempt.update_one(
                 {
-                    "user_id": user_id,
+                    "user_id": str(user_id),
                     "date": time
                 },
                 { 
                     "$set" : {
-                    "login_suc": True,
-                    "success_resp_type": 0,
-                    "inserted_pic_uuid": str(inserted_pic_uuid),
+                        "login_suc": True,
+                        "success_resp_type": 0,
+                        "inserted_pic_uuid": str(inserted_pic_uuid),
                     }
                 })
             return inserted_pic_uuid
@@ -239,13 +241,13 @@ class BBDB:
             log.append([login["date"], login["success_res_id"]])
         return log
 
-    def register_user(self, username: str, user_enc_res_id: uuid.UUID):
+    def register_user(self, username: str, user_enc: np.ndarray):
         """
         Creates a new user in the database with the given username.
 
         Arguments:
         username -- The username of the new user.
-        user_enc_res_id -- user_enc_res_id of the user (identifier from opencv)
+        user_enc -- encoding of the user.
 
         Return:
         If the user has been successfully registered then it returns the
@@ -254,19 +256,73 @@ class BBDB:
         Exception:
         Raises an exception if the username already exists.
         """
-        new_uuid = uuid.uuid1()
-        while self.checkUserIDExists(new_uuid):
-            new_uuid = uuid.uuid1()
-
+        if user_enc is None:
+            user_enc = np.array([])
         if self._user.find_one({"username" : username}):
             raise UsernameExists("Username in use!")
-        else:
-            self._user.insert_one({
-                "_id": str(new_uuid),
-                "username" : username, 
-                "user_enc_res_id" : str(user_enc_res_id),
-                "is_admin" : False})
-            return new_uuid
+
+        new_uuid = uuid.uuid4()
+        for _ in range(self._RETRY_AFTER_FAILURE):
+            try: 
+                self._user.insert_one({
+                    "_id": str(new_uuid),
+                    "username" : username, 
+                    "user_enc_res" : None,
+                    "is_admin" : False})
+                break
+            except pymongo.errors.DuplicateKeyError:
+                new_uuid = uuid.uuid4()
+
+        self.update_user_enc(new_uuid, user_enc)
+        return new_uuid
+
+    def update_user_enc(self, user_uuid: uuid.UUID, user_enc: np.ndarray):
+        """
+        Updates the user encoding of a user.
+
+        Arguments:
+        user_uuid: id of the user.
+        user_enc: The user encoding to update.
+
+        Return:
+        Returns True if the encoding has been update and False otherwise.
+
+        Exception:
+        Raises a TypeError if the inputted encoding isn't a numpy array and
+        raises a UserDoesntExist exception if the uuid doesn't belong to an
+        existing user.
+        """
+        # TODO: Perhaps write some more tests for this functionality.
+        if type(user_enc) != np.ndarray:
+            raise TypeError
+        if not self.checkUserIDExists(user_uuid):
+            raise UserDoesntExist("The user doesn't exist.")
+
+        # TODO: Does it need to be stored with gridFS?
+        self._user.update_one(
+                {"_id": str(user_uuid)}, 
+                {"$set": {"user_enc_res": pickle.dumps(user_enc)}}
+            )
+        return True
+
+    def get_user_enc(self, user_uuid: uuid.UUID) -> np.ndarray:
+        """
+        Get the user encoding from a certain user.
+
+        Arguments:
+        user_uuid: The ID of the user.
+
+        Return:
+        Returns user encoding.
+
+        Exception:
+        Raises UserDoesntExist exception if the user doesn't exist.
+        """
+        if not self.checkUserIDExists(user_uuid):
+            raise UserDoesntExist("The user doesn't exist.")
+
+        resource = self._user.find_one({"_id": str(user_uuid)})
+        return pickle.loads(resource["user_enc_res"])
 
     def getUsers(self, limit=-1):
         """
@@ -293,8 +349,8 @@ class BBDB:
         for user in users:
             user_dict[uuid.UUID(user["_id"])] = user["username"]
         return user_dict
-            
-    def getUserWithId(self, user_id: uuid.UUID) -> str:
+
+    def getUserWithId(self, user_id: uuid.UUID) -> typing.Optional[str]:
         """
         Returns the username corresponding to the user_id.
 
@@ -330,7 +386,7 @@ class BBDB:
             return True
         return False
 
-    def getUser(self, username: str) -> uuid.UUID:
+    def getUser(self, username: str) -> typing.Optional[uuid.UUID]:
         """
         Returns the uuid corresponding to the username.
 
@@ -390,39 +446,43 @@ class wire_DB(BBDB):
     def __init__(self, mongo_client=None):
         BBDB.__init__(self, mongo_client=mongo_client)
         if not self._resource_context.find_one({"name": "wire"}):
-            # TODO: Collision is possible. If many items in resource_context
-            # get generated at the same time (e.g. by multiple clients). 
-            # Also if other items in resource_context get generated.
-            self._resource_context.insert_one({
-                "_id": str(uuid.uuid1()),
-                "name": "wire",
-                "username": None,
-                "res_id": []})
-        self.wire_context_collection = self._resource_context.find_one({"name": "wire"})
+            for _ in range(self._RETRY_AFTER_FAILURE):
+                try: 
+                    self._resource_context.insert_one({
+                        "_id": str(uuid.uuid4()),
+                        "name": "wire",
+                        "username": None,
+                        "res_id": []})
+                    break
+                except pymongo.errors.DuplicateKeyError:
+                    pass
 
-    def getTrainingPictures(self, user_uuid: uuid.UUID = None):
+    def getTrainingPictures(self, user_uuid: typing.Optional[uuid.UUID] = None):
         """
         Returns training pictures from the database from the wire resource context
         """
-        # TODO: We need to be able to verify whether a certain user with the 
-        # user_id exists before we check
-        # TODO: Find a way to make this prettier
+        if not self.checkUserIDExists(user_uuid):
+            raise UserDoesntExist("The user doesn't exist.")
+
+        wire_context_collection = self._resource_context.find_one({"name": "wire"})
+        assert(wire_context_collection is not None)
+
         resources = None
         if user_uuid: 
             resources = self._resource.find({
-                        "_id": {"$in": self.wire_context_collection["res_id"]},
+                        "_id": {"$in": wire_context_collection["res_id"]},
                         "user_id": str(user_uuid),
                     })
         else: 
             resources = self._resource.find({
-                        "_id": {"$in": self.wire_context_collection["res_id"]},
+                        "_id": {"$in": wire_context_collection["res_id"]},
                     })
 
         pics = []
         ids = []
         for r in resources:
             pics.append(pickle.loads(r["res"]))
-            ids.append(r["_id"])
+            ids.append(uuid.UUID(r["_id"]))
 
         return pics, ids
     
@@ -441,25 +501,30 @@ class wire_DB(BBDB):
         Exception:
         TypeError -- Gets risen if the type of the input isn't the expected type.
         """
-
         if type(pic) != np.ndarray or type(user_uuid) != uuid.UUID:
             raise TypeError
+        if not self.checkUserIDExists(user_uuid):
+            raise UserDoesntExist("The user doesn't exist.")
         
-        # TODO: There might be some problems if multiple files are inserted
-        # concurrently
-        pic_uuid = str(uuid.uuid1())
-        self._resource.insert_one({
-            "_id" : pic_uuid,
-            "user_id": str(user_uuid),
-            "res" : pickle.dumps(pic),
-            "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
-            "pic_uuid": pic_uuid
-        })
+        pic_uuid = uuid.uuid4()
+        for _ in range(self._RETRY_AFTER_FAILURE):
+            try: 
+                self._resource.insert_one({
+                    "_id" : str(pic_uuid),
+                    "user_id": str(user_uuid),
+                    "res" : pickle.dumps(pic),
+                    "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
+                })
+                break
+            except pymongo.errors.DuplicateKeyError:
+                pic_uuid = uuid.uuid4()
+
+        # TODO: Are there also exceptions that need to be handled?
         self._resource_context.update_one(
                 {"name": "wire"},
-                {"$addToSet": {"res_id": pic_uuid}})
-        return uuid.UUID(pic_uuid)
+                {"$addToSet": {"res_id": str(pic_uuid)}})
 
+        return pic_uuid
 
     def insertPicture(self, pic : np.ndarray, user_uuid : uuid.UUID):
         """
@@ -482,14 +547,16 @@ class wire_DB(BBDB):
         """
         raise NotImplementedError
 
+
 class vid_DB(BBDB):
     """Subclass from BBDB
     Inherits Methods and Variables"""
 
     def __init__(self,dbhost=None):
         BBDB.__init__(self, dbhost)
+        self._VIDEO_RESOURCE_BUCKET = "vid_resource"
 
-    def insertVideo(self, vid, user_uuid:uuid.UUID):
+    def insertVideo(self, vid, user_uuid: uuid.UUID, filename: str, video_transcript: str):
         """
         Inserts a new video into the database and returns the 
         uuid of the inserted video.
@@ -499,6 +566,8 @@ class vid_DB(BBDB):
         This has to be a file-like object that implements `read()`. 
         Alternatively it's also allowed to be a string.
         user_uuid -- ID of the user that owns the video.
+        filename -- Filename of the inserted data. The filename doesn't have to left empty
+        video_transcript -- The transcript of the video.
 
         Return:
         Returns the uuid of the video that has been inserted into the database.
@@ -506,27 +575,37 @@ class vid_DB(BBDB):
         Exception:
         TypeError -- Gets risen if the type of the input isn't the expected type.
         """
-        if type(user_uuid) != uuid.UUID:
+        if not self.checkUserIDExists(user_uuid):
+            raise UserDoesntExist("The user doesn't exist.")
+        if type(user_uuid) != uuid.UUID or type(filename) != str \
+           or type(video_transcript) != str:
            raise TypeError
 
-        fs = GridFSBucket(self._db, "resource")
-        vid_uuid = str(uuid.uuid1())
-
-        fs.upload_from_stream_with_id(
-            vid_uuid,
-            str(vid_uuid),
-            source = vid,
-            metadata = {
-                "user_id": str(user_uuid),
-                "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
-            }
-        )
+        fs = GridFSBucket(self._db, self._VIDEO_RESOURCE_BUCKET)
+        vid_uuid = str(uuid.uuid4())
+        for i in range(self._RETRY_AFTER_FAILURE):
+            try:
+                fs.upload_from_stream_with_id(
+                    vid_uuid,
+                    str(user_uuid),
+                    source = vid,
+                    metadata = {
+                        "vid_id": vid_uuid,
+                        "user_id": str(user_uuid),
+                        "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
+                        "filename": filename,
+                        "video_transcript": video_transcript,
+                    },
+                )
+                break
+            # TODO: Are there more errors that should be handled?
+            except pymongo.errors.DuplicateKeyError:
+                vid_uuid = str(uuid.uuid4())
         
         self._resource_context.update_one(
             {"name": "video"},
             {"$addToSet": {"res_id": vid_uuid}}
         )
-        
         return uuid.UUID(vid_uuid)        
 
     def getVideoStream(self, vid_uuid: uuid.UUID, stream):
@@ -537,16 +616,45 @@ class vid_DB(BBDB):
         vid_uuid: This is the id of the video that you want to get.
         stream -- The destination stream of the video that is getting downloaded.
         This has to be a file-like object that implements `write()`. 
+        
+        Return:
+        Returns a list with [user_uuid, filename, video_transcript].
 
         Exception:
         TypeError -- Gets risen if the type of the input isn't the expected type.
+        FileNotFoundError -- If the video with the id doesn't exist.
         """
         if type(vid_uuid) != uuid.UUID:
            raise TypeError
 
-        fs = GridFSBucket(self._db, "resource")
+        fs = GridFSBucket(self._db, self._VIDEO_RESOURCE_BUCKET)
         fs.download_to_stream(str(vid_uuid), stream)
+        
+        user_uuid = filename = video_transcript = None
+        # TODO: Is there some better way of avoiding errors with cursor?
+        # peraps use exceptions with next operation
+        for gridout in fs.find({"metadata.vid_id": str(vid_uuid)}):
+            meta = gridout.metadata
+            user_uuid = meta["user_id"]
+            filename = meta["filename"]
+            video_transcript = meta["video_transcript"]
+            break
+        if user_uuid is None:
+            raise FileNotFoundError
 
+        return [uuid.UUID(user_uuid), filename, video_transcript]
+
+    def getVideoIDOfUser(self, user_uuid: uuid.UUID):
+        if type(user_uuid) != uuid.UUID:
+           raise TypeError
+
+        fs = GridFSBucket(self._db, self._VIDEO_RESOURCE_BUCKET)
+        
+        vid_ids = []
+        for gridout in fs.find({"metadata.user_id": str(user_uuid)}):
+            meta = gridout.metadata
+            vid_ids.append(uuid.UUID(meta["vid_id"]))
+        return vid_ids
 
 class opencv_DB(BBDB):
     def __init__(self):
@@ -561,10 +669,21 @@ class frontend_DB(BBDB):
 class UsernameExists(Exception):
     pass
 
+class UserDoesntExist(Exception):
+    pass
+
 """
 # only for testing, remove in production
 if __name__ == '__main__':
-    DB = BBDB()
-    DB.register_user("mike")
-    print(list(DB.user_table.find()))
-"""
+    #DB = BBDB()
+    #DB.register_user("mike")
+    #print(list(DB.user_table.find()))
+
+    print("LMAO")
+    #wireDB = wire_DB()
+    #user = User.BigBrotherUser("0", "name", wireDB)
+
+    #pics, uuids = wireDB.getTrainingPictures("*")
+    #print(pics)
+    #print(uuids)
+#"""

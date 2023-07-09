@@ -26,6 +26,7 @@ h1 {
 	font-size: 36px;
 	font-weight: 600;
 	letter-spacing: 1px;
+	opacity: 1;
 	}
 
 #center{
@@ -44,6 +45,22 @@ input{
     background-color: #426DFF;
 }
 
+#timer{
+	font-size: 72px;
+	color: #333;
+	transition: color 0.5s ease-in-out;
+	margin-top: -300px;
+}
+
+.fade-out{
+	animation: fadeOut 1s linear forwards;
+}
+
+@keyframes fadeOut{
+	0% {opacity: 1;}
+	100% {opacity: 0;}
+}
+
 /*meet the team layout*/
 
 
@@ -60,12 +77,16 @@ table tr td img {
 
 .cols{
 	display: grid;
+	opacity: 0.85;
 }
 .col:first-child{
 	grid-area: a;
 }
 .col:nth-child(2){
 	grid-area: b;
+}
+.col:nth-child(3){
+	grid-area: c;
 }
 
 .card{
@@ -79,23 +100,27 @@ table tr td img {
 .col:nth-child(2){
 	grid-area: b;
 }
+.col:nth-child(3){
+	grid-area: c;
+}
 
 
 
 
 @media (max-width: 768px){
-	.cols{
-		grid-template-areas:
-		"a"
-		"b";
-	}
+    .cols{
+        grid-template-areas:
+        "a"
+        "b"
+        "c";
+    }
 }
 
 @media (min-width: 768px){
-	.cols{
-		grid-template-areas:
-		"a b";
-	}
+    .cols{
+        grid-template-areas:
+        "a b c";
+    }
 }
 
 /*tabelle userpage*/

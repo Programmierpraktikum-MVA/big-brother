@@ -28,9 +28,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','WiReTest'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition','haar_and_lbph'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','DBM'))
-from modifiedFaceRecog import recogFace
-from face_rec_main import train_add_faces, authorize_faces
-from main import load_images as load_test_imgs
+#from modifiedFaceRecog import recogFace
+#from face_rec_main import train_add_faces, authorize_faces
+#from main import load_images as load_test_imgs
 import FaceDetection
 #from app import routes
 
@@ -168,6 +168,10 @@ def validationsignup():
 def team():
     return render_template("team.html")
 
+@application.route("/team2")
+def team2():
+    return render_template("team_23.html")
+
 @application.route("/algorithms")
 def algorithms():
     return render_template("algorithms.html")
@@ -239,6 +243,7 @@ def login():
             
             # TODO: Take a look at why it was set to user_uuid[0]
             # user_uuid =uuid.UUID(user_uuid[0]) old code outputted a list
+            #user_uuid = uuid.UUID(user_uuid)
             user['uuid'] = user_uuid
             #Get Picture Path
             #print("test3",file=sys.stdout)
@@ -246,10 +251,15 @@ def login():
             #print("test4",file=sys.stdout)
             filename = secure_filename(f.filename)
             file_path = os.path.join(application.instance_path, filename)
-
+            if f and filename and file_path is not None:
+                f.save(file_path)
+                
+            else:
+                rejectionDict['reason'] = "Image Not uploaded!"
+                return render_template('rejection.html',  rejectionDict = rejectionDict, title='Sign In', form=form)
             #Save Picture
             #print("test5",file=sys.stdout)
-            f.save(file_path)
+            
             #print("test6",file=sys.stdout)
             cookie = request.cookies.get('session_uuid')
 
@@ -264,6 +274,7 @@ def login():
 
             else:
                 return render_template('rejection.html',  rejectionDict = rejectionDict, title='Sign In', form=form)
+            
         else:
             print("'{}' not found!".format(user['username']),file=sys.stdout)
             rejectionDict['reason'] = "'{}' not found!".format(user['username'])
@@ -300,8 +311,6 @@ def create():
         user = {
                     'username': form.name.data,
                     'pic1' : request.files['pic1'],
-                    'pic2' : request.files['pic2'],
-                    'pic3' : request.files['pic3']
                 }
 
         user_uuid = None
@@ -315,9 +324,8 @@ def create():
             #pic_2 = form.pictureleft.data
             #pic_3 = form.pictureright.data
 
-            pictures = [user['pic1'],user['pic2'],user['pic3']]
+            pictures = [user['pic1']]
 
-            # TODO pls change last parameter
             user_uuid = ws.DB.register_user(user['username'], None)
 
             for pic in pictures:
@@ -354,7 +362,7 @@ def create():
 
             print("'{}' already exists!".format(user['username']),file=sys.stdout)
 
-            rejectionDict['reason'] = "Benutzername '{}' ist bereits vergeben!".format(user['username'])
+            rejectionDict['reason'] = "Benutzername '{}' nicht Verfügbar".format(user['username'])
 
             return render_template('rejection.html',  rejectionDict = rejectionDict, title='Reject', form=form)
 
@@ -697,7 +705,7 @@ def logincamera():
             'bbUser': bbUser
         }
 
-        #user['login_attempt_time'] = ws.DB.login_user(user_uuid=user_uuid)
+        #user['login_attempt_time'] = ws.DB.login_user(uuid_id=user_uuid)
 
         return render_template('webcamJS.html', title='Camera')
 
@@ -805,4 +813,5 @@ if __name__=='__main__':
         #socketio.run(app, host='0.0.0.0', port=80, debug=True)
 #app.run()
         #app.run(host='85.214.39.122', port='80', ssl_context=('/etc/letsencrypt/live/h2938366.stratoserver.net/fullchain.pem','/etc/letsencrypt/live/h2938366.stratoserver.net/privkey.pem'))
-        socketio.run(application, host='h2938366.stratoserver.net', port='80', debug=True, ssl_context=('fullchain.pem','privkey.pem'))
+        # socketio.run(application, host='h2938366.stratoserver.net', port='80', debug=True, ssl_context=('fullchain.pem','privkey.pem'))
+        application.run(host='0.0.0.0', port=5000)
