@@ -103,7 +103,7 @@ class BBDB:
         print("WARNING: AddAdminRelation Failed!")
         return False
 
-    def checkUserIDExists(self, uuid: uuid.UUID):
+    def checkUserIDExists(self, uuid: typing.Optional[uuid.UUID]):
         """
         Checks whether a certain uuid already exists.
 
@@ -267,30 +267,13 @@ class BBDB:
                 self._user.insert_one({
                     "_id": str(new_uuid),
                     "username" : username, 
-                    "user_enc_res_id" : None,
+                    "user_enc_res" : None,
                     "is_admin" : False})
                 break
             except pymongo.errors.DuplicateKeyError:
                 new_uuid = uuid.uuid4()
 
-        # if creating the encoding has errors then it would need to be handled seperately
-        for _ in range(self._RETRY_AFTER_FAILURE):
-            try: 
-                self._user.insert_one({
-                    "_id": str(new_uuid),
-                    "username" : username, 
-                    "user_enc_res_id" : None,
-                    "is_admin" : False})
-                break
-            except pymongo.errors.DuplicateKeyError:
-                new_uuid = uuid.uuid4()
-
-        updated_uuid = self.update_user_enc(new_uuid, user_enc)
-        self._user.update_one(
-                {"_id": str(new_uuid)}, 
-                {"$set": {"user_enc_res_id": str(updated_uuid)}}
-            )
-
+        self.update_user_enc(new_uuid, user_enc)
         return new_uuid
 
     def update_user_enc(self, user_uuid: uuid.UUID, user_enc: np.ndarray):
@@ -302,7 +285,7 @@ class BBDB:
         user_enc: The user encoding to update.
 
         Return:
-        Returns the uuid of the encoding that has been inserted.
+        Returns True if the encoding has been update and False otherwise.
 
         Exception:
         Raises a TypeError if the inputted encoding isn't a numpy array and
@@ -315,30 +298,12 @@ class BBDB:
         if not self.checkUserIDExists(user_uuid):
             raise UserDoesntExist("The user doesn't exist.")
 
-
-        # deleting old encoding
-        enc_uuid = self._user.find_one({"_id" : str(user_uuid)})["user_enc_res_id"]
-        if enc_uuid:
-            self._resource.delete_one({"_id": str(enc_uuid)})
-
-        # inserting new encoding
-        ## if there was an encoding uuid before then we can continue to use it,
-        ## because we already deleted the old version
-        if not enc_uuid:
-            enc_uuid = uuid.uuid4()
-        for _ in range(self._RETRY_AFTER_FAILURE):
-            try: 
-                # TODO: Does it need to be stored with gridFS?
-                self._resource.insert_one({
-                    "_id" : str(enc_uuid),
-                    "user_id": str(user_uuid),
-                    "res" : pickle.dumps(user_enc),
-                    "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
-                })
-                break
-            except pymongo.errors.DuplicateKeyError:
-                enc_uuid = uuid.uuid4()
-        return enc_uuid
+        # TODO: Does it need to be stored with gridFS?
+        self._user.update_one(
+                {"_id": str(user_uuid)}, 
+                {"$set": {"user_enc_res": pickle.dumps(user_enc)}}
+            )
+        return True
 
     def get_user_enc(self, user_uuid: uuid.UUID) -> np.ndarray:
         """
@@ -357,7 +322,7 @@ class BBDB:
             raise UserDoesntExist("The user doesn't exist.")
 
         resource = self._user.find_one({"_id": str(user_uuid)})
-        return pickle.loads(resource["res"])
+        return pickle.loads(resource["user_enc_res"])
 
     def getUsers(self, limit=-1):
         """
@@ -496,8 +461,9 @@ class wire_DB(BBDB):
         """
         Returns training pictures from the database from the wire resource context
         """
-        # TODO: We need to be able to verify whether a certain user with the 
-        # user_id exists before we check
+        if not self.checkUserIDExists(user_uuid):
+            raise UserDoesntExist("The user doesn't exist.")
+
         wire_context_collection = self._resource_context.find_one({"name": "wire"})
         assert(wire_context_collection is not None)
 
@@ -589,7 +555,7 @@ class vid_DB(BBDB):
     def __init__(self,dbhost=None):
         BBDB.__init__(self, dbhost)
 
-    def insertVideo(self, vid, user_uuid:uuid.UUID):
+    def insertVideo(self, vid, user_uuid: uuid.UUID):
         """
         Inserts a new video into the database and returns the 
         uuid of the inserted video.
@@ -606,6 +572,8 @@ class vid_DB(BBDB):
         Exception:
         TypeError -- Gets risen if the type of the input isn't the expected type.
         """
+        if not self.checkUserIDExists(user_uuid):
+            raise UserDoesntExist("The user doesn't exist.")
         if type(user_uuid) != uuid.UUID:
            raise TypeError
 

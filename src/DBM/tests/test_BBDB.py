@@ -25,7 +25,7 @@ class BBDBTest(unittest.TestCase):
         [
             "single_name", 
             ["user"],
-            [uuid.UUID('08ba61ae-02e5-11ee-b499-080027755fb8')],
+            [np.array([])],
         ],
         [
             "multiple_normal_names", 
@@ -33,16 +33,16 @@ class BBDBTest(unittest.TestCase):
              "somestrangestring", "moreUsers", "user2",
              "siii", "AllowedName"],
             [
-                uuid.UUID('60b6e3b4-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6e6c0-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6e74c-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6e7ba-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6e828-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6e9c2-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6ea4e-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6eada-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6ec06-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6ec9c-02e5-11ee-b499-080027755fb8'),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
             ],
         ],
         [
@@ -51,23 +51,23 @@ class BBDBTest(unittest.TestCase):
              "raise NotImplementedError", "more$Users&", "*3(*)&&$%)@",
              "(100)", "*&strangeButAllowedN(ame"],
             [
-                uuid.UUID('60b6e3b4-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6e6c0-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6e74c-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6e7ba-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6e828-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6e9c2-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6ea4e-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6eada-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6ec06-02e5-11ee-b499-080027755fb8'),
-                uuid.UUID('60b6ec9c-02e5-11ee-b499-080027755fb8'),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
+                np.array([]),
             ],
         ],
     ])
     
     def test_register_user_different_users(self, name, 
                                            usernames: list, 
-                                           user_enc_res_ids: list):
+                                           user_enc_res: list):
         """
         Testing different usernames. 
 
@@ -82,8 +82,8 @@ class BBDBTest(unittest.TestCase):
                              {}, 
                              "Dictionary is supposed to be emtpy")
         user_ids = []
-        for user, enc_id in zip(usernames, user_enc_res_ids):
-            tmp = self.db.register_user(user, enc_id)
+        for user, enc in zip(usernames, user_enc_res):
+            tmp = self.db.register_user(user, enc)
             user_ids.append(tmp)
             l = len(user_ids)
 
@@ -138,7 +138,6 @@ class BBDBTest(unittest.TestCase):
     
     def test_basic_login_workflow(self):
         # TODO: Maybe implement more tests like this
-        print("start")
         user_id = self.db.register_user("user", None)
 
         timestamp = self.db.login_user(user_id)
@@ -172,43 +171,23 @@ class BBDBTest(unittest.TestCase):
             )
     
     def test_get_user_enc(self):
-        user_id = uuid.uuid1()
         user_encoding = np.random.randn(10)
-
-        # Create a user entry with the given user ID and encoding
-        user_entry = {
-            "_id": str(user_id),
-            "username": "user_1",
-            "res": pickle.dumps(user_encoding)
-        }
-        self.db._user.insert_one(user_entry)
+        user_id = self.db.register_user("user", user_encoding)
 
         # Test the get_user_enc method
         retrieved_user_enc = self.db.get_user_enc(user_id)
         self.assertTrue(np.array_equal(retrieved_user_enc, user_encoding))
     
     def test_update_user_enc(self):
-        user_id = uuid.uuid1()
         original_user_enc = np.random.randn(10)  # Replace with your user encoding logic
         updated_user_enc = np.random.randn(10)  # Replace with your updated user encoding logic
 
-        # Create a user entry with the given user ID and original encoding
-        user_entry = {
-            "_id": str(user_id),
-            "username": "user_2",
-            "user_enc_res_id": original_user_enc.tolist()  # Convert ndarray to a Python list
-        }
-        self.db._user.insert_one(user_entry)
-
-        # Update the user encoding using the update_user_enc method
+        user_id = self.db.register_user("user_2", original_user_enc)
         self.db.update_user_enc(user_id, updated_user_enc)
-
-        # Retrieve the updated user encoding from the database
-        retrieved_user_enc = self.db._resource.find_one({"user_id": str(user_id)})["res"]
-        retrieved_user_enc = np.array(retrieved_user_enc)  # Convert the list back to ndarray
+        retrieved_user_enc = self.db.get_user_enc(user_id)
 
         # Check if the retrieved user encoding matches the updated encoding
-        self.assertTrue(np.array_equal(retrieved_user_enc, pickle.dumps(updated_user_enc)))
+        self.assertTrue(np.array_equal(retrieved_user_enc, updated_user_enc))
 
     def test_register_user(self):
         username = "user_1"
