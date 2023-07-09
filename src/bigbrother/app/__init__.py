@@ -5,6 +5,7 @@
 # @Last modified by:   Julius U. Heller
 # @Last modified time: 2021-06-21T13:27:48+02:00
 import os
+import random
 from sys import stdout
 import sys
 import click
@@ -239,7 +240,7 @@ def login():
         user_uuid = ws.DB.getUser(user['username'])
 
         if user_uuid:
-            
+
             # TODO: Take a look at why it was set to user_uuid[0]
             # user_uuid =uuid.UUID(user_uuid[0]) old code outputted a list
             #user_uuid = uuid.UUID(user_uuid)
@@ -698,9 +699,13 @@ def logincamera():
             'bbUser': bbUser
         }
 
+        data = {
+            "username": form.name.data
+        }
+
         #user['login_attempt_time'] = ws.DB.login_user(uuid_id=user_uuid)
 
-        return render_template('webcamJS.html', title='Camera')
+        return render_template('webcamJS.html', title='Camera', data=data)
 
     return render_template('logincamera.html', title='Login with Camera', form = form)
 
@@ -739,27 +744,70 @@ def createcamera():
 
     return render_template('createcamera.html', title='Create an account', form = form)
 
-@application.route('/verifypicture', methods=['GET', 'POST'])
+
+@application.route('/verifypicture', methods=['POST'])
 def verifyPicture():
+
+    rejectionDict = {
+
+        'reason': 'Unknown',
+        'redirect': 'login',
+        'redirectPretty': 'Zurück zur Anmeldung',
+    }
 
     if request.method == 'POST':
 
         data = request.get_json()
-        imgData = data.get('image')
 
-        imgDecoded = cv2.imdecode(
-            np.fromstring(base64.b64decode(imgData), dtype=np.uint8),
-            cv2.IMREAD_COLOR
-        )
+        if 'image' not in data:
+            print("Error Im")
 
-        (checkResult, ignore) = LogikFaceRec.FaceReco.photo_to_photo(imgDecoded, imgDecoded)
-        print(checkResult)
+        if 'username' not in data:
+            print("Error Us")
 
-    else:
-        print(cv2.misc.version)
+        username = data.get('username')
+        img_url = data.get('image').split(',')
 
-    return render_template("team.html")
-    #return render_template('userpage.html', title='test')
+        if len(img_url) < 2:
+            print("Error Split")
+
+        img_data = img_url[1]
+        buffer = np.frombuffer(base64.b64decode(img_data), dtype=np.uint8)
+        img = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+
+        user = {
+            'username': username,
+            'pic': img
+        }
+
+        # Verify user
+        user_uuid = ws.DB.getUser(username)
+
+        if user_uuid:
+
+            imgs_raw, uuids = ws.DB.getTrainingPictures(user_uuid=user_uuid)
+            logik = LogikFaceRec.FaceReco()
+
+            for user_img in imgs_raw:
+                #(results, _) = logik.photo_to_photo(user_img, img)
+                print("results")
+
+            result = True
+            if result:
+
+                thisUser = BigBrotherUser(user_uuid, user['username'], ws.DB)
+                flask_login.login_user(thisUser)
+
+                return render_template('validationauthenticated.html', user=user)
+
+            else:
+                return render_template('rejection.html', rejectionDict=rejectionDict, title='Sign In')
+        else:
+            print("'{}' not found!".format(user['username']), file=sys.stdout)
+            rejectionDict['reason'] = "'{}' not found!".format(user['username'])
+            return render_template('rejection.html', rejectionDict=rejectionDict, title='Sign In')
+
+    return render_template('rejection.html', rejectionDict=rejectionDict, title='Sign In')
 
 def registerUser(username, pictures):
     user = {

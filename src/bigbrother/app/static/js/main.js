@@ -48,20 +48,27 @@ $(document).ready(function(){
     context.drawImage(video, 0, 0, canvas.width, canvas.height);
     var dataURL = canvas.toDataURL('image/jpeg');
 
+    var userRef = document.getElementById('user-data');
+    var attribute = userRef.getAttribute('data-user');
+
+    var jsonString = attribute.replace(/'/g, '"')
+    var jsonObj = JSON.parse(jsonString)
+
     var request = new XMLHttpRequest();
     request.open('POST', '/verifypicture')
     request.setRequestHeader('Content-Type', 'application/json');
 
     var data = {
+      username: jsonObj.username,
       image: dataURL
     };
     var json = JSON.stringify(data);
 
     request.onload = function () {
       if(request.status === 200)
-        console.log("Success");
+        console.log("Picture has been send successfully");
       else
-        console.log("Error:", request.status)
+        console.log("Error while sending picture: ", request.status)
     };
 
     request.send(json);
