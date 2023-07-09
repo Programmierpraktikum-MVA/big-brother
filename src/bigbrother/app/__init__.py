@@ -34,6 +34,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','Logik'))
 #from face_rec_main import train_add_faces, authorize_faces
 #from main import load_images as load_test_imgs
 import FaceDetection
+import face_recognition
 #from app import routes
 import Face_Recognition.FaceReco_class as LogikFaceRec
 
@@ -781,14 +782,14 @@ def verifyPicture():
 
         img_data = img_url[1]
         buffer = np.frombuffer(base64.b64decode(img_data), dtype=np.uint8)
-        img = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
+        camera_img = cv2.imdecode(buffer, cv2.COLOR_BGR2RGB)
 
         #cv2.imwrite('./snapshot.jpg', img)
 
-        user = {
-            'username': username,
-            'pic': img
-        }
+        #user = {
+        #    'username': username,
+        #    'pic': img
+        #}
 
         # Verify user
         user_uuid = ws.DB.getUser(username)
@@ -798,12 +799,18 @@ def verifyPicture():
             imgs_raw, uuids = ws.DB.getTrainingPictures(user_uuid=user_uuid)
             logik = LogikFaceRec.FaceReco()
 
-            for user_img in imgs_raw:
-                (results, _) = logik.photo_to_photo(user_img, img)
-                print("results")
+            cv2.imwrite("./im1.jpg", imgs_raw[0])
+            cv2.imwrite("./im2.jpg", imgs_raw[1])
 
-            result = True
-            if result:
+            #for user_img in imgs_raw:
+            rgb_img = cv2.cvtColor(imgs_raw[1], cv2.COLOR_BGR2RGB)
+
+            image_encoding = face_recognition.face_encodings(rgb_img)
+
+            (results, _) = logik.photo_to_photo(image_encoding[0], camera_img)
+            print(results)
+
+            if results:
 
                 thisUser = BigBrotherUser(user_uuid, user['username'], ws.DB)
                 flask_login.login_user(thisUser)
@@ -812,6 +819,7 @@ def verifyPicture():
 
             else:
                 return render_template('rejection.html', rejectionDict=rejectionDict, title='Sign In')
+
         else:
             print("'{}' not found!".format(user['username']), file=sys.stdout)
             rejectionDict['reason'] = "'{}' not found!".format(user['username'])
