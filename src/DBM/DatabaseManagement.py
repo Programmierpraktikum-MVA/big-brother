@@ -587,7 +587,7 @@ class vid_DB(BBDB):
             try:
                 fs.upload_from_stream_with_id(
                     vid_uuid,
-                    vid_uuid,
+                    str(user_uuid),
                     source = vid,
                     metadata = {
                         "vid_id": vid_uuid,
@@ -595,7 +595,7 @@ class vid_DB(BBDB):
                         "date": dt.datetime.now(tz=timezone('Europe/Amsterdam')),
                         "filename": filename,
                         "video_transcript": video_transcript,
-                    }
+                    },
                 )
                 break
             # TODO: Are there more errors that should be handled?
@@ -633,7 +633,7 @@ class vid_DB(BBDB):
         user_uuid = filename = video_transcript = None
         # TODO: Is there some better way of avoiding errors with cursor?
         # peraps use exceptions with next operation
-        for gridout in fs.find({"_id": str(vid_uuid)}):
+        for gridout in fs.find({"metadata.vid_id": str(vid_uuid)}):
             meta = gridout.metadata
             user_uuid = meta["user_id"]
             filename = meta["filename"]
@@ -643,6 +643,18 @@ class vid_DB(BBDB):
             raise FileNotFoundError
 
         return [uuid.UUID(user_uuid), filename, video_transcript]
+
+    def getVideoIDOfUser(self, user_uuid: uuid.UUID):
+        if type(user_uuid) != uuid.UUID:
+           raise TypeError
+
+        fs = GridFSBucket(self._db, self._VIDEO_RESOURCE_BUCKET)
+        
+        vid_ids = []
+        for gridout in fs.find({"metadata.user_id": str(user_uuid)}):
+            meta = gridout.metadata
+            vid_ids.append(uuid.UUID(meta["vid_id"]))
+        return vid_ids
 
 class opencv_DB(BBDB):
     def __init__(self):

@@ -70,5 +70,32 @@ class VidDBTest(unittest.TestCase):
     def test_retrival_non_existing_video(self):
         pass
 
+    def test_retrieval_vid_ids_from_certain_user(self):
+        source = "videos/Program in C Song.mp4"
+        compare = "tmp/test.mp4"
+        filename = "file"
+        video_transcript = "Some transcript"
+
+        user_id = self.db.register_user(f"me", None)
+
+        vid_ids = []
+        for i in range(10):
+            stream_insert = open(source, "rb+")
+            vid_uuid = self.db.insertVideo(
+                    stream_insert, 
+                    user_id, 
+                    filename, 
+                    video_transcript
+                )
+            stream_insert.close()
+            vid_ids.append(vid_uuid)
+
+        ret_vid_ids = self.db.getVideoIDOfUser(user_id)
+
+        # testing equality
+        vid_ids.sort()
+        ret_vid_ids.sort()
+        self.assertEqual(vid_ids, ret_vid_ids)
+
 if __name__ == "__main__":
     unittest.main()
