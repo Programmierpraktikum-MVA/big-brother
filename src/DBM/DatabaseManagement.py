@@ -357,7 +357,7 @@ class BBDB:
             raise UserDoesntExist("The user doesn't exist.")
 
         resource = self._user.find_one({"_id": str(user_uuid)})
-        return pickle.loads(resource("res"))
+        return pickle.loads(resource["res"])
 
     def getUsers(self, limit=-1):
         """
