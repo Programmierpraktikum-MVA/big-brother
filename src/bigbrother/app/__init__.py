@@ -754,6 +754,8 @@ def createcamera():
 @application.route('/verifypicture', methods=['POST'])
 def verifyPicture():
 
+    #return render_template('team.html')
+
     rejectionDict = {
 
         'reason': 'Unknown',
@@ -781,6 +783,8 @@ def verifyPicture():
         buffer = np.frombuffer(base64.b64decode(img_data), dtype=np.uint8)
         img = cv2.imdecode(buffer, cv2.IMREAD_COLOR)
 
+        #cv2.imwrite('./snapshot.jpg', img)
+
         user = {
             'username': username,
             'pic': img
@@ -795,7 +799,7 @@ def verifyPicture():
             logik = LogikFaceRec.FaceReco()
 
             for user_img in imgs_raw:
-                #(results, _) = logik.photo_to_photo(user_img, img)
+                (results, _) = logik.photo_to_photo(user_img, img)
                 print("results")
 
             result = True
