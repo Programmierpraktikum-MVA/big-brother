@@ -755,14 +755,13 @@ def createcamera():
 @application.route('/verifypicture', methods=['GET', 'POST'])
 def verifyPicture():
 
-    #return render_template('team.html')
-
     rejectionDict = {
 
         'reason': 'Unknown',
         'redirect': 'login',
         'redirectPretty': 'Zurück zur Anmeldung',
     }
+    rejection_data = {"rejectionDict": rejectionDict, "title": "Sign In"}
 
     if request.method == 'POST':
 
@@ -784,13 +783,6 @@ def verifyPicture():
         buffer = np.frombuffer(base64.b64decode(img_data), dtype=np.uint8)
         camera_img = cv2.imdecode(buffer, cv2.COLOR_BGR2RGB)
 
-        #cv2.imwrite('./snapshot.jpg', img)
-
-        #user = {
-        #    'username': username,
-        #    'pic': img
-        #}
-
         # Verify user
         user_uuid = ws.DB.getUser(username)
 
@@ -799,32 +791,45 @@ def verifyPicture():
             imgs_raw, uuids = ws.DB.getTrainingPictures(user_uuid=user_uuid)
             logik = LogikFaceRec.FaceReco()
 
-            cv2.imwrite("./im1.jpg", imgs_raw[0])
-            cv2.imwrite("./im2.jpg", imgs_raw[1])
+            #cv2.imwrite("./im1.jpg", imgs_raw[0])
 
-            #for user_img in imgs_raw:
-            rgb_img = cv2.cvtColor(imgs_raw[1], cv2.COLOR_BGR2RGB)
-            image_encoding = face_recognition.face_encodings(rgb_img)
+            result = False
+            for user_img in imgs_raw:
+                print("picture")
+                try:
+                    rgb_img = cv2.cvtColor(user_img, cv2.COLOR_BGR2RGB)
+                except:
+                    print("error converting picture")
+                    continue
 
-            (results, _) = logik.photo_to_photo(image_encoding[0], camera_img)
-            print(results)
+                image_encoding = face_recognition.face_encodings(rgb_img)
 
-            if results[0]:
+                (results, _) = logik.photo_to_photo(image_encoding[0], camera_img)
+                print("Results:")
+                print(results)
+                if results[0]:
+                    result = True
+                    break
+
+            print(result)
+            if result:
 
                 thisUser = BigBrotherUser(user_uuid, user['username'], ws.DB)
                 flask_login.login_user(thisUser)
 
-                return render_template('validationauthenticated.html', user=user)
+                userData = {
+                    "name": username
+                }
+
+                return {"redirect": "/validationauthenticated", "data": userData}
 
             else:
-                return render_template('rejection.html', rejectionDict=rejectionDict, title='Sign In')
+                return {"redirect": "/rejection", "data": rejection_data}
 
         else:
-            print("'{}' not found!".format(user['username']), file=sys.stdout)
-            rejectionDict['reason'] = "'{}' not found!".format(user['username'])
-            return render_template('rejection.html', rejectionDict=rejectionDict, title='Sign In')
+            return {"redirect": "/rejection", "data": rejection_data}
 
-    return render_template('rejection.html', rejectionDict=rejectionDict, title='Sign In')
+    return {"redirect": "/rejection", "data": rejection_data}
 
 def registerUser(username, pictures):
     user = {
