@@ -772,16 +772,16 @@ def verifyPicture():
         data = request.get_json()
 
         if 'image' not in data:
-            print("Error Im")
+            return {"redirect": "/rejection", "data": rejection_data}
 
         if 'username' not in data:
-            print("Error Us")
+            return {"redirect": "/rejection", "data": rejection_data}
 
         username = data.get('username')
         img_url = data.get('image').split(',')
 
         if len(img_url) < 2:
-            print("Error Split")
+            return {"redirect": "/rejection", "data": rejection_data}
 
         img_data = img_url[1]
         buffer = np.frombuffer(base64.b64decode(img_data), dtype=np.uint8)
@@ -799,7 +799,7 @@ def verifyPicture():
 
             result = False
             for user_img in imgs_raw:
-                print("picture")
+                #print("picture")
                 try:
                     rgb_img = cv2.cvtColor(user_img, cv2.COLOR_BGR2RGB)
                 except:
@@ -807,6 +807,9 @@ def verifyPicture():
                     continue
 
                 image_encoding = face_recognition.face_encodings(rgb_img)
+
+                if len(image_encoding) == 0:
+                    return {"redirect": "/rejection", "data": rejection_data}
 
                 (results, _) = logik.photo_to_photo(image_encoding[0], camera_img)
                 print("Results:")
