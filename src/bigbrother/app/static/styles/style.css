@@ -108,19 +108,19 @@ table tr td img {
 
 
 @media (max-width: 768px){
-	.cols{
-		grid-template-areas:
-		"a"
-		"b"
-		"c";
-	}
+    .cols{
+        grid-template-areas:
+        "a"
+        "b"
+        "c";
+    }
 }
 
 @media (min-width: 768px){
-	.cols{
-		grid-template-areas:
-		"a b c";
-	}
+    .cols{
+        grid-template-areas:
+        "a b c";
+    }
 }
 
 /*tabelle userpage*/
