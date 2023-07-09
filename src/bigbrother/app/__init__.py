@@ -173,6 +173,10 @@ def validationsignup():
 def team():
     return render_template("team.html")
 
+@application.route("/team2")
+def team2():
+    return render_template("team_23.html")
+
 @application.route("/algorithms")
 def algorithms():
     return render_template("algorithms.html")
@@ -312,6 +316,8 @@ def create():
         user = {
                     'username': form.name.data,
                     'pic1' : request.files['pic1'],
+                    'pic2' : request.files['pic2'],
+                    'pic3' : request.files['pic3'],
                 }
 
         user_uuid = None
@@ -325,7 +331,11 @@ def create():
             #pic_2 = form.pictureleft.data
             #pic_3 = form.pictureright.data
 
-            pictures = [user['pic1']]
+            pictures = [
+                    user['pic1'],
+                    user['pic2'],
+                    user['pic3'],
+                ]
 
             user_uuid = ws.DB.register_user(user['username'], None)
 
