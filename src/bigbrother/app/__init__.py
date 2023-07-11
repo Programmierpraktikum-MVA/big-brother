@@ -789,16 +789,16 @@ def verifyPicture():
         data = request.get_json()
 
         if 'image' not in data:
-            return {"redirect": "/rejection", "data": rejection_data}
+            return {"redirect": "/rejection"} #, "data": rejection_data}
 
         if 'username' not in data:
-            return {"redirect": "/rejection", "data": rejection_data}
+            return {"redirect": "/rejection"} #, "data": rejection_data}
 
         username = data.get('username')
         img_url = data.get('image').split(',')
 
         if len(img_url) < 2:
-            return {"redirect": "/rejection", "data": rejection_data}
+            return {"redirect": "/rejection"} #, "data": rejection_data}
 
         img_data = img_url[1]
         buffer = np.frombuffer(base64.b64decode(img_data), dtype=np.uint8)
@@ -827,7 +827,7 @@ def verifyPicture():
                     if channels == 2:
                         rgb_img = cv2.cvtColor(user_img, cv2.COLOR_GRAY2RGB)
                     elif channels == 3:
-                        rgb_img = user_img # cv2.cvtColor(user_img, cv2.COLOR_BGR2RGB)
+                        rgb_img = cv2.cvtColor(user_img, cv2.COLOR_BGR2RGB)
                     elif channels == 4:
                         rgb_img = cv2.cvtColor(user_img, cv2.COLOR_RGBA2RGB)
                     else:
