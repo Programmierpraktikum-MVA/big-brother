@@ -773,20 +773,16 @@ def createcamera():
     return render_template('createcamera.html', title='Create an account', form = form)
 
 
-@application.route('/verifypicture', methods=['GET', 'POST'])
+@application.route('/verifypicture', methods=['POST'])
 def verifyPicture():
 
-    rejectionDict = {
-
-        'reason': 'Unknown',
-        'redirect': 'login',
-        'redirectPretty': 'Zurück zur Anmeldung',
-    }
-    rejection_data = {"rejectionDict": rejectionDict, "title": "Sign In"}
+    #POST request gets send from main.js in the sendSnapshot() function.
 
     if request.method == 'POST':
 
         data = request.get_json()
+
+        #json data needs to have the encoded image & username
 
         if 'image' not in data:
             return {"redirect": "/rejection"} #, "data": rejection_data}
@@ -797,9 +793,11 @@ def verifyPicture():
         username = data.get('username')
         img_url = data.get('image').split(',')
 
+        #data url is split into 'image type' and 'actual data'
         if len(img_url) < 2:
             return {"redirect": "/rejection"} #, "data": rejection_data}
 
+        #decode image
         img_data = img_url[1]
         buffer = np.frombuffer(base64.b64decode(img_data), dtype=np.uint8)
         camera_img = cv2.imdecode(buffer, cv2.COLOR_BGR2RGB)
@@ -815,6 +813,7 @@ def verifyPicture():
             if user_enc is None or len(user_enc) == 0:
                 return {"redirect": "/rejection"}
 
+            #p2p function results are List<bool>, List<float>
             logik = LogikFaceRec.FaceReco()
             (results, dists) = logik.photo_to_photo(user_enc, camera_img)
 
@@ -832,6 +831,7 @@ def verifyPicture():
                     "name": username
                 }
 
+                #the json object returned will be used in main.js to switch to target page
                 return {"redirect": "/validationauthenticated", "data": userData}
 
             else:
