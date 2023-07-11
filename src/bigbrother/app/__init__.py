@@ -809,51 +809,20 @@ def verifyPicture():
 
         if user_uuid:
 
-            imgs_raw, uuids = ws.DB.getTrainingPictures(user_uuid=user_uuid)
+            user_enc = ws.DB.get_user_enc(user_uuid)
+            print("User Enc: ", user_enc)
+
+            if user_enc is None or len(user_enc) == 0:
+                return {"redirect": "/rejection"}
+
             logik = LogikFaceRec.FaceReco()
+            (results, dists) = logik.photo_to_photo(user_enc, camera_img)
 
-            debug = False
-            result = False
-            i = 0
-            for user_img in imgs_raw:
-                if debug:
-                    print("write img: ", i)
-                    cv2.imwrite(f"./db_img_{i}.jpg", user_img)
-                    i += 1
-                try:
-                    channels = len(user_img.shape)
-                    print("channels detected: ", channels)
+            print("p2p results: ")
+            print(results)
+            print(dists)
 
-                    if channels == 2:
-                        rgb_img = cv2.cvtColor(user_img, cv2.COLOR_GRAY2RGB)
-                    elif channels == 3:
-                        rgb_img = cv2.cvtColor(user_img, cv2.COLOR_BGR2RGB)
-                    elif channels == 4:
-                        rgb_img = cv2.cvtColor(user_img, cv2.COLOR_RGBA2RGB)
-                    else:
-                        rgb_img = user_img
-
-                    print("getting image encodings")
-                    image_encoding = face_recognition.face_encodings(rgb_img)
-
-                except:
-                    print("error converting picture")
-                    continue
-
-                print("encoding len: ", len(image_encoding))
-                if len(image_encoding) == 0:
-                    return {"redirect": "/rejection"} #, "data": rejection_data}
-
-                (results, dists) = logik.photo_to_photo(image_encoding[0], camera_img)
-
-                print("p2p results: ")
-                print(results)
-                print(dists)
-
-                if results[0]:
-                    result = True
-                    break
-
+            result = results[0]
             if result:
 
                 thisUser = BigBrotherUser(user_uuid, user['username'], ws.DB)
