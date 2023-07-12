@@ -348,6 +348,7 @@ def create():
 
             user_uuid = ws.DB.register_user(user['username'], None)
             i = 0
+            encodings_saved = False
             for storage in pictures:
                 i += 1
                 if storage is None or not storage.content_type.startswith('image/'):
@@ -364,6 +365,17 @@ def create():
                 im_bytes = storage.stream.read()
                 image = Image.open(io.BytesIO(im_bytes))
                 array = np.array(image)
+
+                if not encodings_saved:
+                    try:
+                        img = cv2.cvtColor(array, cv2.COLOR_BGR2RGB)
+                        encodings = face_recognition.face_encodings(img)
+                        #print("encodings: ", encodings)
+
+                        ws.DB.update_user_enc(user_uuid, encodings[0])
+                        encodings_saved = True
+                    except:
+                        print("error while calculating encodings")
 
                 image.close()
                 storage.close()
@@ -821,6 +833,7 @@ def verifyPicture():
             print(results)
             print(dists)
 
+            #if successfull login but page does not change !
             result = results[0]
             if result:
 
@@ -831,8 +844,15 @@ def verifyPicture():
                     "name": username
                 }
 
+                #TODO:
                 #the json object returned will be used in main.js to switch to target page
-                return {"redirect": "/validationauthenticated", "data": userData}
+                #this does not work with /validationauthenticated because its not a valid endpoint
+                #that page gets usually shown under the /login endpoint with the photo login.
+                #return render_template doesnt work here IDK why
+                #but if you get render_template to work you need to remove the onload function in main.js 73
+
+                #return render_template('validationauthenticated.html', user=user)
+                return {"redirect": "/validationauthenticated"} #, "data": userData}
 
             else:
                 return {"redirect": "/rejection"} #, "data": rejection_data}

@@ -74,6 +74,8 @@ $(document).ready(function(){
       if(request.status === 200)
       {
         //collect url + extra data/search params
+        //does not work for the validationauthenticated html page
+
         console.log("Picture has been send successfully");
         var response = JSON.parse(request.responseText)
         var url = new URL(response.redirect, window.location.href);
