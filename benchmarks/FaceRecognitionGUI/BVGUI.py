@@ -95,21 +95,23 @@ class BVGUI (tk.Frame):
         # Initialize windows
         self.pW.createProgressbar("FrameInit")
         self.pW.update("FrameInit","Initialising True Positive Viewer...", 0)
-        self.TPV = BVW.TPViewer(self,"visible")
-        self.pW.update("FrameInit","Initialising True Negative Viewer...", 15)
-        self.TNV = BVW.TNViewer(self,"hidden")
-        self.pW.update("FrameInit","Initialising Mixed Viewer...", 30)
-        self.MV = BVW.MixedViewer(self,"hidden")
-        self.pW.update("FrameInit","Initialising User Viewer...", 45)
-        self.UV = BVW.UserViewer(self,"visible","UserViewer")
-        self.pW.update("FrameInit","Initialising CV2 True Positive Viewer...", 60)
-        self.CV2TP = BVW.CV2TPViewer(self,"hidden")
-        self.pW.update("FrameInit","Initialising CV2 True Negative Viewer...", 75)
-        self.CV2TN = BVW.CV2TNViewer(self,"hidden")
+        self.TPV = BVW.TPViewer(self, "visible")
+        self.pW.update("FrameInit","Initialising True Negative Viewer...", 10)
+        self.TNV = BVW.TNViewer(self, "hidden")
+        self.pW.update("FrameInit","Initialising Mixed Viewer...", 20)
+        self.MV = BVW.MixedViewer(self, "hidden")
+        self.pW.update("FrameInit","Initialising User Viewer...", 30)
+        self.UV = BVW.UserViewer(self, "visible", "UserViewer")
+        self.pW.update("FrameInit","Initialising CV2 True Positive Viewer...", 40)
+        self.CV2TP = BVW.CV2TPViewer(self, "hidden")
+        self.pW.update("FrameInit","Initialising CV2 True Negative Viewer...", 60)
+        self.CV2TN = BVW.CV2TNViewer(self, "hidden")
+        self.pW.update("FrameInit","Initialising Face Recognition 2023 Viewer...", 75)
+        self.FaceRecog2023 = BVW.FaceRecog2023Viewer(self, "hidden")
         ## add viewers that are available on all systems
         self.BVWindows = [
                 self.TPV, self.TNV, self.MV, self.UV,
-                self.CV2TP, self.CV2TN,
+                self.CV2TP, self.CV2TN, self.FaceRecog2023
              ]
         ## linux specific windows
         if platform.system() == 'Linux':
@@ -155,7 +157,7 @@ class BVGUI (tk.Frame):
             [('selected', _compcolor), ('active',_ana2color)])
         self.titleFontStyle.configure('title.TLabel', font=('Arial', 12))
 
-        #Set geometry
+        # Set geometry
         self.master.geometry("{}x{}+758+131".format(self.windowDimension_x,self.windowDimension_y))
         self.master.minsize(120, 1)
         self.master.maxsize(5764, 1041)
@@ -167,8 +169,8 @@ class BVGUI (tk.Frame):
         self.menubar = tk.Menu(self.master,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
         self.master.configure(menu = self.menubar)
 
+        ## Initializing menubar of Wire benchmarks
         self.wireBar = tk.Menu(self.master,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
-
         self.wireBar.add_command(
                 activebackground="#ececec",
                 activeforeground="#000000",
@@ -176,7 +178,6 @@ class BVGUI (tk.Frame):
                 foreground="#000000",
                 label="True Positive Viewer",
                 command= lambda: self.switchWindow("TPViewer"))
-
         self.wireBar.add_command(
                 activebackground="#ececec",
                 activeforeground="#000000",
@@ -184,7 +185,6 @@ class BVGUI (tk.Frame):
                 foreground="#000000",
                 label="True Negative Viewer",
                 command = lambda: self.switchWindow("TNViewer"))
-
         self.wireBar.add_command(
                 activebackground="#ececec",
                 activeforeground="#000000",
@@ -192,11 +192,10 @@ class BVGUI (tk.Frame):
                 foreground="#000000",
                 label="Mixed Viewer",
                 command = lambda: self.switchWindow("MixedViewer"))
-
         self.menubar.add_cascade(label="Wire Benchmarks", menu=self.wireBar)
 
+        ## Creating and initializing menubar of Wire benchmarks
         self.OFBar = tk.Menu(self.master,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
-
         self.OFBar.add_command(
                 activebackground="#ececec",
                 activeforeground="#000000",
@@ -204,7 +203,6 @@ class BVGUI (tk.Frame):
                 foreground="#000000",
                 label="True Positive Viewer",
                 command= lambda: self.switchWindow("OFTPViewer"))
-
         self.OFBar.add_command(
                 activebackground="#ececec",
                 activeforeground="#000000",
@@ -212,11 +210,10 @@ class BVGUI (tk.Frame):
                 foreground="#000000",
                 label="True Negative Viewer",
                 command = lambda: self.switchWindow("OFTNViewer"))
-
         self.menubar.add_cascade(label="OpenFace Benchmarks", menu=self.OFBar)
 
+        # Creating and initializing menubar of openface benchmarks
         self.cv2Bar = tk.Menu(self.master,font="TkMenuFont",bg=_bgcolor,fg=_fgcolor)
-
         self.cv2Bar.add_command(
                 activebackground="#ececec",
                 activeforeground="#000000",
@@ -224,7 +221,6 @@ class BVGUI (tk.Frame):
                 foreground="#000000",
                 label="True Positive Viewer",
                 command= lambda: self.switchWindow("CV2TPViewer"))
-
         self.cv2Bar.add_command(
                 activebackground="#ececec",
                 activeforeground="#000000",
@@ -232,8 +228,18 @@ class BVGUI (tk.Frame):
                 foreground="#000000",
                 label="True Negative Viewer",
                 command = lambda: self.switchWindow("CV2TNViewer"))
-
         self.menubar.add_cascade(label="CV2 Benchmarks", menu=self.cv2Bar)
+
+        # Creating and initializing menubar of Face Recognition 2023 benchmark
+        self.menubar.add_command(
+                activebackground="#ececec",
+                activeforeground="#000000",
+                background="#d9d9d9",
+                foreground="#000000",
+                label="FaceRecog2023 Viewer",
+                command= lambda: self.switchWindow("FaceRecog2023"))
+
+        # Creating and initializing menubar for CV2 benchmarks
         self.menubar.add_command(
                 activebackground="#ececec",
                 activeforeground="#000000",
