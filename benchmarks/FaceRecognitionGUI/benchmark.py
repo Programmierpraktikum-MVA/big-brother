@@ -11,6 +11,9 @@
 import sys
 import os
 
+# debugging
+from inspect import currentframe, getframeinfo
+
 # Databasemanagement Libraries
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..', 'src', 'DBM'))
 
@@ -247,14 +250,6 @@ class benchRecog():
         coeffs_test: Eigenface coefficient of test images
         """
         # TODO: Properly comment this method
-        """
-        # Doesnt need to be executed, done in Benchmark Init
-        # TODO: load test data set
-        # TODO: project test data set into eigenbasis
-        #coeffs_test = np.zeros(coeffs_train.shape)
-        #coeffs_test = np.zeros((len(imgs_test),))
-        #coeffs_test = project_faces(pcs, imgs_test, mean_data)
-        """
         d_matrix = imgs_test
         test_pcs, test_sval, test_mean = main.calculate_pca(d_matrix)
         coeffs_test = self.modified_project_faces(pcs, imgs_test, mean_data)
@@ -280,6 +275,7 @@ class benchRecog():
         scores, imgs_test, coeffs_test = self.modified_identify_faces(
                 coeffs_train, pcs, mean_data,imgs_test
             )
+        print(scores)
         return scores
 
     def run_true_negatives(self):
@@ -358,6 +354,16 @@ class benchRecog():
             }
         ).set_index('recogImageIndex').sort_values(by='testImageIndex')
 
+        # TODO: recogScore is np.nan sometimes check whether this is still the case
+        frame_info = getframeinfo(currentframe())
+        print(
+f"""
+Description: This is the output of the true negative test. There might be a np.nan number that needs to get fixed.
+File: {frame_info.filename}
+Line: {frame_info.lineno}
+recogScore values:\n {recogScores}
+"""
+        )
         return recogScores
 
     def run_mixed_positives(self, numSelfImages, numDecoyUsers, numDecoyUserImages):
@@ -553,6 +559,15 @@ class benchRecog():
                 'recogScore':      recogImageScores
             }).set_index('recogImageIndex').sort_values(by='testImageIndex')
 
+        frame_info = getframeinfo(currentframe())
+        print(
+f"""
+Description: This is the output of the true positive test. There might be a np.nan number that needs to get fixed.
+File: {frame_info.filename}
+Line: {frame_info.lineno}
+recogScore values:\n {recogScores}
+"""
+        )
         return recogScores
 
 
@@ -797,7 +812,7 @@ class benchRecog():
                 recogImageScores.append(recognisedImageScore)
                 usernames.append(user_.username)
 
-            # TODO: Find out what it does
+            # TODO: Find out what it does and comment it properly
             # Data to calculate optimal Threshold
             # we're in true positive case so all labels are True
             labels = np.full(shape=(len(imgs_train),len(imgs_test)), 
@@ -824,6 +839,16 @@ class benchRecog():
                 'recogUsername' : usernames,
                 'recogScore' : recogImageScores
             }).set_index('recogImageIndex').sort_values(by='testImageIndex')
+
+        frame_info = getframeinfo(currentframe())
+        print(
+f"""
+Description: This is the output of the true positive test that inserts data.
+File: {frame_info.filename}
+Line: {frame_info.lineno}
+recogScore values:\n {recogScores}
+"""
+        )
 
         return recogScores
 
@@ -908,5 +933,15 @@ class benchRecog():
         f_score_level = 1  # Beta = 1 is the default value. (prev. one was 0.25, which prioritised precision over recall)
         self.threshold_calc.set_thres_range(min_threshold = 0, max_threshold = 300, step_num = 300)  # choose more accurately with smaller range and/or more steps
         self.threshold_calc.calc_and_print_results(f_score_level)
+
+        frame_info = getframeinfo(currentframe())
+        print(
+f"""
+Description: This is the output of the true negative test that inserts data.
+File: {frame_info.filename}
+Line: {frame_info.lineno}
+recogScore values:\n {recogScores}
+"""
+        )
 
         return recogScores
