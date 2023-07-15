@@ -18,8 +18,13 @@ import matplotlib.dates as mdates
 from matplotlib.collections import LineCollection
 import matplotlib.pyplot as plt
 import time
+from enum import Enum
 
 import BV_Utils as BVU
+
+class BenchmarkType(Enum):
+    pass
+    
 
 class BVWindow:
     def __init__(self,GUI,windowStatus,name):
@@ -60,6 +65,7 @@ class BVWindow:
             y += spacing
         return labels
 
+    # TODO: Refactor this method. It isn't designed well.
     def updateBenchmark(self,benchmarkType):
         userlimit = self.getUserLimitEntry()
         userTimes = None
@@ -620,6 +626,7 @@ class CV2TNViewer(GraphViewer):
         if (self.windowStatus == "visible"):
             self.show()
 
+
 class CV2TPViewer(GraphViewer):
     def __init__(self,GUI,windowStatus):
 
@@ -635,6 +642,26 @@ class CV2TPViewer(GraphViewer):
 
         if (self.windowStatus == "visible"):
             self.show()
+
+    def updateBenchmark(self):
+
+
+class CV2TPViewer(GraphViewer):
+    def __init__(self,GUI,windowStatus):
+
+        # Starting GraphViewer Superclass
+        GraphViewer.__init__(self,GUI,windowStatus,"")
+
+        # Configuring GUI elements
+        self.titleLabel.config(text = "FaceRecognition2023" ,style = 'title.TLabel')
+        self.plotPrettyLabel = "CV2 True Positive Pictures"
+        self.runTestOnParameterButton.config(command = lambda: self.updateBenchmark("FaceRecognition2023"))
+
+        self.updateBenchmark("FaceRecognition2023")
+
+        if (self.windowStatus == "visible"):
+            self.show()
+
 
 class MixedViewer(GraphViewer):
     def __init__(self,GUI,windowStatus):

@@ -245,12 +245,16 @@ class BVGUI (tk.Frame):
         self.master.protocol("WM_DELETE_WINDOW", self.closeGraceful)
 
     def updateBenchmark(self,**kwargs):
-
         userlimit = 5
         for key, value in kwargs.items():
             if key == 'userlimit':
                 userlimit = value
-        self.bR = benchRecog(root = self.master,master = self,userlimit=userlimit,pW = self.pW)
+        self.bR = benchRecog(
+            root=self.master, 
+            master=self, 
+            userlimit=userlimit, 
+            pW=self.pW
+        )
 
     def update(self):
         """
