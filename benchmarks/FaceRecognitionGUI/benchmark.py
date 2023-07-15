@@ -11,11 +11,13 @@
 import sys
 import os
 
+# Databasemanagement Libraries
+sys.path.append(os.path.join(os.path.dirname(__file__), '..','..', 'src', 'DBM'))
+
 #Facerecog Libraries
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','WiReTest'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','DBM'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition', 'haar_and_lbph'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'FaceRecognition'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'FaceRecognition', 'haar_and_lbph'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..', 'src', 'FaceRecognition', 'WireFaceRecognition'))
 import main
 import uuid
 import cv2

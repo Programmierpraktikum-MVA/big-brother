@@ -32,7 +32,7 @@ import time as t
 #Database
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','DBM'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..','..', 'src', 'DBM'))
 import DatabaseManagement as DBM
 from threading import Thread
 
