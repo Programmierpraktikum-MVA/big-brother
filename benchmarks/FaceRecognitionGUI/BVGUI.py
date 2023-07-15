@@ -355,25 +355,24 @@ class BVGUI (tk.Frame):
 
             DBUser.imgShape = maxShape
 
-            DBUser.recogPictures = np.zeros((recogPictureNum,maxPicSize))
-            #newDatabaseUser.trainPictures = np.zeros((picNum - recogPictureNum,maxPicSize))
-            DBUser.trainPictures = np.zeros((trainPictureNum,maxPicSize))
+            DBUser.recogPictures = np.zeros((recogPictureNum, maxPicSize))
+            DBUser.trainPictures = np.zeros((trainPictureNum, maxPicSize))
+            trainFillPointer = 0
+            recogFillPointer = 0
 
             for index,picTuple in enumerate(user_pics.itertuples()):
-                #resizedPic = cv2.resize(pic, dsize=maxShape[:2], interpolation=cv2.INTER_CUBIC).reshape(maxShape[0] * maxShape[1] * 3)
                 pic = getattr(picTuple,'pic_data')
                 if pic.shape[0] == 0 or pic.shape[1] == 0:
                     #create empty pic if its corrupted
                     pic = np.random.randint(255, size=(maxShape[0],maxShape[1],3),dtype=np.uint8)
                 resizedPic = cv2.resize(pic.astype("uint8"), dsize=(maxShape[1],maxShape[0]), interpolation=cv2.INTER_CUBIC).flatten()
 
-                #if index < recogPictureNum:
                 if index % 3 == 0:
-                    DBUser.recogPictures[index // 3] = resizedPic
+                    DBUser.recogPictures[recogFillPointer] = resizedPic
+                    recogFillPointer += 1
                 else:
-                    DBUser.trainPictures[index // 3] = resizedPic
-                    #newDatabaseUser.trainPictures[index - recogPictureNum] = resizedPic
-            #userList.append(DBUser)
+                    DBUser.trainPictures[trainFillPointer] = resizedPic
+                    trainFillPointer += 1
         self.pW.finProgress("bbInit")
 
         #Get Minimum number of recog and train pictures

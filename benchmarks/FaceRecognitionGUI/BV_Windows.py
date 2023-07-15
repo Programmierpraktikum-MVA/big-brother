@@ -124,9 +124,8 @@ class BVWindow:
             self.scores = self.parent.bR.run_mixed_positives(numSelfIm ,numDecoy,numDecoyIm)
             userTimes = self.parent.bR.MixedUserTimer.getTimes()
         elif benchmarkType == BenchmarkType.FaceRecog2023:
-            print("WARNING: FaceRecog2023 is not implemented!!!")
-            self.scores = self.parent.bR.opencv_run_true_positives()
-            userTimes = self.parent.bR.CV2TPUserTimer.getTimes()
+            self.scores = self.parent.bR.face_recog_2023_run_benchmark()
+            userTimes = self.parent.bR.FaceRecog2023UserTimer.getTimes()
 
         self.updateListbox()
 
