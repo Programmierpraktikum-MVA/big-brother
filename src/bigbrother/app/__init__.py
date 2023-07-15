@@ -5,6 +5,7 @@
 # @Last modified by:   Julius U. Heller
 # @Last modified time: 2021-06-21T13:27:48+02:00
 import os
+import random
 from sys import stdout
 import sys
 import click
@@ -28,11 +29,14 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','WiReTest'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition','haar_and_lbph'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','DBM'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','Logik'))
 #from modifiedFaceRecog import recogFace
 #from face_rec_main import train_add_faces, authorize_faces
 #from main import load_images as load_test_imgs
 import FaceDetection
+import face_recognition
 #from app import routes
+import Face_Recognition.FaceReco_class as LogikFaceRec
 
 from flask import render_template, flash, redirect, url_for
 
@@ -51,6 +55,7 @@ import uuid
 import DatabaseManagement as DBM
 import matplotlib as mpl
 import cv2
+import cv2.misc
 import time
 import logging
 import base64
@@ -168,6 +173,10 @@ def validationsignup():
 def team():
     return render_template("team.html")
 
+@application.route("/team2")
+def team2():
+    return render_template("team_23.html")
+
 @application.route("/algorithms")
 def algorithms():
     return render_template("algorithms.html")
@@ -236,7 +245,7 @@ def login():
         user_uuid = ws.DB.getUser(user['username'])
 
         if user_uuid:
-            
+
             # TODO: Take a look at why it was set to user_uuid[0]
             # user_uuid =uuid.UUID(user_uuid[0]) old code outputted a list
             #user_uuid = uuid.UUID(user_uuid)
@@ -247,10 +256,15 @@ def login():
             #print("test4",file=sys.stdout)
             filename = secure_filename(f.filename)
             file_path = os.path.join(application.instance_path, filename)
-
+            if f and filename and file_path is not None:
+                f.save(file_path)
+                
+            else:
+                rejectionDict['reason'] = "Image Not uploaded!"
+                return render_template('rejection.html',  rejectionDict = rejectionDict, title='Sign In', form=form)
             #Save Picture
             #print("test5",file=sys.stdout)
-            f.save(file_path)
+            
             #print("test6",file=sys.stdout)
             cookie = request.cookies.get('session_uuid')
 
@@ -265,6 +279,7 @@ def login():
 
             else:
                 return render_template('rejection.html',  rejectionDict = rejectionDict, title='Sign In', form=form)
+            
         else:
             print("'{}' not found!".format(user['username']),file=sys.stdout)
             rejectionDict['reason'] = "'{}' not found!".format(user['username'])
@@ -301,6 +316,8 @@ def create():
         user = {
                     'username': form.name.data,
                     'pic1' : request.files['pic1'],
+                    'pic2' : request.files['pic2'],
+                    'pic3' : request.files['pic3'],
                 }
 
         user_uuid = None
@@ -314,7 +331,11 @@ def create():
             #pic_2 = form.pictureleft.data
             #pic_3 = form.pictureright.data
 
-            pictures = [user['pic1']]
+            pictures = [
+                    user['pic1'],
+                    user['pic2'],
+                    user['pic3'],
+                ]
 
             user_uuid = ws.DB.register_user(user['username'], None)
 
@@ -695,9 +716,13 @@ def logincamera():
             'bbUser': bbUser
         }
 
+        data = {
+            "username": form.name.data
+        }
+
         #user['login_attempt_time'] = ws.DB.login_user(uuid_id=user_uuid)
 
-        return render_template('webcamJS.html', title='Camera')
+        return render_template('webcamJS.html', title='Camera', data=data)
 
     return render_template('logincamera.html', title='Login with Camera', form = form)
 
@@ -737,6 +762,87 @@ def createcamera():
     return render_template('createcamera.html', title='Create an account', form = form)
 
 
+@application.route('/verifypicture', methods=['GET', 'POST'])
+def verifyPicture():
+
+    rejectionDict = {
+
+        'reason': 'Unknown',
+        'redirect': 'login',
+        'redirectPretty': 'Zurück zur Anmeldung',
+    }
+    rejection_data = {"rejectionDict": rejectionDict, "title": "Sign In"}
+
+    if request.method == 'POST':
+
+        data = request.get_json()
+
+        if 'image' not in data:
+            return {"redirect": "/rejection", "data": rejection_data}
+
+        if 'username' not in data:
+            return {"redirect": "/rejection", "data": rejection_data}
+
+        username = data.get('username')
+        img_url = data.get('image').split(',')
+
+        if len(img_url) < 2:
+            return {"redirect": "/rejection", "data": rejection_data}
+
+        img_data = img_url[1]
+        buffer = np.frombuffer(base64.b64decode(img_data), dtype=np.uint8)
+        camera_img = cv2.imdecode(buffer, cv2.COLOR_BGR2RGB)
+
+        # Verify user
+        user_uuid = ws.DB.getUser(username)
+
+        if user_uuid:
+
+            imgs_raw, uuids = ws.DB.getTrainingPictures(user_uuid=user_uuid)
+            logik = LogikFaceRec.FaceReco()
+
+            #cv2.imwrite("./im1.jpg", imgs_raw[0])
+
+            result = False
+            for user_img in imgs_raw:
+                #print("picture")
+                try:
+                    rgb_img = cv2.cvtColor(user_img, cv2.COLOR_BGR2RGB)
+                except:
+                    print("error converting picture")
+                    continue
+
+                image_encoding = face_recognition.face_encodings(rgb_img)
+
+                if len(image_encoding) == 0:
+                    return {"redirect": "/rejection", "data": rejection_data}
+
+                (results, _) = logik.photo_to_photo(image_encoding[0], camera_img)
+                print("Results:")
+                print(results)
+                if results[0]:
+                    result = True
+                    break
+
+            print(result)
+            if result:
+
+                thisUser = BigBrotherUser(user_uuid, user['username'], ws.DB)
+                flask_login.login_user(thisUser)
+
+                userData = {
+                    "name": username
+                }
+
+                return {"redirect": "/validationauthenticated", "data": userData}
+
+            else:
+                return {"redirect": "/rejection", "data": rejection_data}
+
+        else:
+            return {"redirect": "/rejection", "data": rejection_data}
+
+    return {"redirect": "/rejection", "data": rejection_data}
 
 def registerUser(username, pictures):
     user = {
@@ -768,13 +874,13 @@ def registerUser(username, pictures):
 
             print("'{}' already exists!".format(username),file=sys.stdout)
 
-            rejectionDict['reason'] = "Benutzername '{}' nicht Verfügbar".format(username)
+            #rejectionDict['reason'] = "Benutzername '{}' nicht Verfügbar".format(username)
 
             #return render_template('rejection.html',  rejectionDict = rejectionDict, title='Reject', form=form)
-            emit('redirect', {'url' : '/rejection'});
+            emit('redirect', {'url' : '/rejection'})
 
     #return render_template('validationsignup.html', name=user['username'])
-    emit('redirect', {'url' : '/validationsignup'});
+    emit('redirect', {'url' : '/validationsignup'})
     return
 
 """
@@ -803,4 +909,5 @@ if __name__=='__main__':
         #socketio.run(app, host='0.0.0.0', port=80, debug=True)
 #app.run()
         #app.run(host='85.214.39.122', port='80', ssl_context=('/etc/letsencrypt/live/h2938366.stratoserver.net/fullchain.pem','/etc/letsencrypt/live/h2938366.stratoserver.net/privkey.pem'))
-        socketio.run(application, host='h2938366.stratoserver.net', port='80', debug=True, ssl_context=('fullchain.pem','privkey.pem'))
+        # socketio.run(application, host='h2938366.stratoserver.net', port='80', debug=True, ssl_context=('fullchain.pem','privkey.pem'))
+        application.run(host='0.0.0.0', port=5000)
