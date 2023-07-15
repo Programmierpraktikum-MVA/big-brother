@@ -161,7 +161,6 @@ class benchRecog():
 
         # Init Users: Assignes Images to their right owner, assignes Username and necessary Variables
         self.users = []
-        self.dbUsers = self.master.DbUsers
         userCount = self.userLimit
         userFin = 0
 
@@ -198,7 +197,8 @@ class benchRecog():
         if self.pW:
             self.pW.finProgress("benchProg")
 
-        self.users = self.master.DbUsers
+        # reset users
+        self.users = self.master.DbUsers # TODO: This should be fixed (Don't know why they did that)
         self.dbUsers = self.master.DbUsers
 
         self.image_shape = self.master.imShape
