@@ -305,8 +305,9 @@ class BVGUI (tk.Frame):
 
             self.pW.update("bbInit","Fetching Big Brother Users : {}".format(value),(counter / len(userDict)) * 100)
         for pic_index, pic in enumerate(pics):
-
             #flattened = pic.reshape(pic.shape[0] * pic.shape[1])
+            if len(pic.shape) == 3 and pic.shape[2] == 3:
+                pic = cv2.cvtColor(pic.astype("uint8"), cv2.COLOR_BGR2GRAY)
             flattened = pic.flatten()
 
             if flattened.shape[0] > maxPicSize:
@@ -316,7 +317,7 @@ class BVGUI (tk.Frame):
         self.imShape = maxShape
         UserPicDf = pd.DataFrame(data = {'user_uuid' : user_uuids, 'pic_uuid' : pic_uuids, 'pic_data' : pics}).set_index('user_uuid')
         newUserDict = {}
-
+        print(maxShape)
         for user_uuid in user_uuids:
             counter += 1
             username = userDict[user_uuid]
@@ -362,6 +363,10 @@ class BVGUI (tk.Frame):
 
             for index,picTuple in enumerate(user_pics.itertuples()):
                 pic = getattr(picTuple,'pic_data')
+                # Convert into grayscale to avoid size
+                if len(pic.shape) == 3 and pic.shape[2] == 3:
+                    pic = cv2.cvtColor(pic.astype("uint8"), cv2.COLOR_BGR2GRAY)
+
                 if pic.shape[0] == 0 or pic.shape[1] == 0:
                     #create empty pic if its corrupted
                     pic = np.random.randint(255, size=(maxShape[0],maxShape[1],3),dtype=np.uint8)

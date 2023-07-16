@@ -10,6 +10,7 @@
 #System Libraries
 import sys
 import os
+from pathlib import Path
 
 # debugging
 from inspect import currentframe, getframeinfo
@@ -978,6 +979,8 @@ recogScore values:\n {recogScores}
 
     def face_recog_2023_run_benchmark(self):
         def execute_algorithm(train_imgs , test_imgs):
+            if (len(train_imgs) == 0) or (len(test_imgs) == 0):
+                return np.array([])
             scores = np.empty((len(train_imgs), len(test_imgs)))
             scores[:] = np.nan
             faceRecognitionInstance = FaceReco_class.FaceReco()
@@ -1008,8 +1011,10 @@ recogScore values:\n {recogScores}
 
                         _, score = faceRecognitionInstance.photo_to_photo(image_encoding[0], img_test)
                     scores[train_index][test_index] = score[0]
-            os.remove("test.jpg")
-            os.remove("train.jpg")
+            if Path("test.jpg").is_file():
+                os.remove("test.jpg")
+            if Path("train.jpg").is_file():
+                os.remove("train.jpg")
             return scores
 
         LABEL_FOR_PROGRESS_OF_TEST = "FaceRecog2023Prog"
@@ -1041,7 +1046,7 @@ recogScore values:\n {recogScores}
             if self.root:
                 self.root.update()
 
-            if len(user_.trainPictures) == 0:
+            if len(user_.trainPictures) == 0 or len(user_.recogPictures) == 0:
                 print("WARNING: Training pictures empty!")
                 continue
 
