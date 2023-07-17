@@ -114,6 +114,8 @@ class benchRecog():
         self.OFTNUserTimer = BVU.UserTimer()
         self.MixedUserTimer = BVU.UserTimer()
         self.FaceRecog2023UserTimer = BVU.UserTimer()
+        self.FaceRecog2023PositiveUserTimer = BVU.UserTimer()
+        self.FaceRecog2023NegativeUserTimer = BVU.UserTimer()
     
         self.exitFlag = False
         self.cv2Inst = cv2Recog()
@@ -977,46 +979,46 @@ recogScore values:\n {recogScores}
 
         return recogScores
 
+    def _execute_face_recog_2023_algo(self, train_imgs , test_imgs):
+        if (len(train_imgs) == 0) or (len(test_imgs) == 0):
+            return np.array([])
+        scores = np.empty((len(train_imgs), len(test_imgs)))
+        scores[:] = np.nan
+        faceRecognitionInstance = FaceReco_class.FaceReco()
+
+        for train_index, train_img in enumerate(train_imgs):
+            train_img = train_img.reshape((self.image_shape[0],self.image_shape[1]))
+            train_img = train_img.astype("uint8")
+
+            # calculate encoding
+            pil_img = Image.fromarray(train_img)
+            pil_img.save("train.jpg")
+            img_train = face_recognition.load_image_file("train.jpg")
+            image_encoding = face_recognition.face_encodings(img_train)
+
+            for test_index, test_img in enumerate(test_imgs):
+                ## it is possible that the encoding can't be calculated
+                if image_encoding == []:
+                    # NOTE: The score is set to 1, because this is the maximum distance
+                    # and the picture is assumed to be completely different
+                    score = [1]
+                else:
+                    # calculate distance
+                    test_img = test_img.reshape((self.image_shape[0],self.image_shape[1]))
+                    test_img = test_img.astype("uint8")
+                    pil_img = Image.fromarray(test_img)
+                    pil_img.save("test.jpg")
+                    img_test = face_recognition.load_image_file("test.jpg")
+
+                    _, score = faceRecognitionInstance.photo_to_photo(image_encoding[0], img_test)
+                scores[train_index][test_index] = score[0]
+        if Path("test.jpg").is_file():
+            os.remove("test.jpg")
+        if Path("train.jpg").is_file():
+            os.remove("train.jpg")
+        return scores
+
     def face_recog_2023_run_benchmark(self):
-        def execute_algorithm(train_imgs , test_imgs):
-            if (len(train_imgs) == 0) or (len(test_imgs) == 0):
-                return np.array([])
-            scores = np.empty((len(train_imgs), len(test_imgs)))
-            scores[:] = np.nan
-            faceRecognitionInstance = FaceReco_class.FaceReco()
-
-            for train_index, train_img in enumerate(train_imgs):
-                train_img = train_img.reshape((self.image_shape[0],self.image_shape[1]))
-                train_img = train_img.astype("uint8")
-
-                # calculate encoding
-                pil_img = Image.fromarray(train_img)
-                pil_img.save("train.jpg")
-                img_train = face_recognition.load_image_file("train.jpg")
-                image_encoding = face_recognition.face_encodings(img_train)
-
-                for test_index, test_img in enumerate(test_imgs):
-                    ## it is possible that the encoding can't be calculated
-                    if image_encoding == []:
-                        # NOTE: The score is set to 1, because this is the maximum distance
-                        # and the picture is assumed to be completely different
-                        score = [1]
-                    else:
-                        # calculate distance
-                        test_img = test_img.reshape((self.image_shape[0],self.image_shape[1]))
-                        test_img = test_img.astype("uint8")
-                        pil_img = Image.fromarray(test_img)
-                        pil_img.save("test.jpg")
-                        img_test = face_recognition.load_image_file("test.jpg")
-
-                        _, score = faceRecognitionInstance.photo_to_photo(image_encoding[0], img_test)
-                    scores[train_index][test_index] = score[0]
-            if Path("test.jpg").is_file():
-                os.remove("test.jpg")
-            if Path("train.jpg").is_file():
-                os.remove("train.jpg")
-            return scores
-
         LABEL_FOR_PROGRESS_OF_TEST = "FaceRecog2023Prog"
 
         if self.pW:
@@ -1062,7 +1064,7 @@ recogScore values:\n {recogScores}
             imgs_test = user_.recogPictures.copy()
 
             ## calculate scores
-            scores = execute_algorithm(imgs_train, imgs_test)
+            scores = self._execute_face_recog_2023_algo(imgs_train, imgs_test)
 
             ## Prepare Score Dataframe
             user_.recogScores = None
@@ -1088,7 +1090,7 @@ recogScore values:\n {recogScores}
             imgs_test = user_.recogPictures.copy()
 
             ## calculate scores
-            scores = execute_algorithm(imgs_train, imgs_test)
+            scores = self._execute_face_recog_2023_algo(imgs_train, imgs_test)
 
             ## Prepare Score Dataframe
             user_.recogScores = None
@@ -1139,6 +1141,171 @@ recogScore values:\n {recogScores}
         print(
 f"""
 Description: This is the output of the true negative test that inserts data.
+File: {frame_info.filename}
+Line: {frame_info.lineno}
+recogScore values:\n {recogScores}
+"""
+        )
+
+        return recogScores
+
+    def face_recog_2023_run_positive(self):
+        LABEL_FOR_PROGRESS_OF_TEST = "FaceRecog2023PositiveProg"
+
+        if self.pW:
+            self.pW.createProgressbar(LABEL_FOR_PROGRESS_OF_TEST)
+
+        userCount = len(self.users)
+        userFin = 0
+
+        testImageIndices = []
+        recogImageIndices = []
+        recogImageScores = []
+        usernames = []
+        recogUsernames = []
+
+        # reset previously used resources
+        self.FaceRecog2023PositiveUserTimer.clear()
+
+        for user_index,user_ in enumerate(self.users):
+            if self.pW:
+                self.pW.update(
+                    LABEL_FOR_PROGRESS_OF_TEST,
+                    "[FaceRecog2023Positive] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),
+                    userFin/userCount * 100
+                )
+
+            if self.root:
+                self.root.update()
+
+            if len(user_.trainPictures) == 0 or len(user_.recogPictures) == 0:
+                print("WARNING: Training pictures empty!")
+                continue
+
+            self.FaceRecog2023PositiveUserTimer.startTimer(user_)
+
+            ## Fetch User pictures
+            imgs_train = user_.trainPictures.copy() # Images are flattened
+            imgs_test = user_.recogPictures.copy()
+
+            ## calculate scores
+            scores = self._execute_face_recog_2023_algo(imgs_train, imgs_test)
+
+            ## Prepare Score Dataframe
+            user_.recogScores = None # TODO: this is not used somehow
+            for testImageIndex in range(scores.shape[1]):
+                recognisedImageIndex = np.argmin(scores[:, testImageIndex])
+                recognisedImageScore = np.min(scores[:, testImageIndex])
+                testImageIndices.append(testImageIndex)
+                recogImageIndices.append(recognisedImageIndex)
+                recogImageScores.append(recognisedImageScore)
+                usernames.append(user_.username)
+                recogUsernames.append(user_.username)
+
+            userFin += 1
+            self.FaceRecog2023PositiveUserTimer.endTimer(user_)
+
+        if self.pW:
+            self.pW.finProgress(LABEL_FOR_PROGRESS_OF_TEST)
+
+        recogScores = pd.DataFrame(
+            data = {
+                'testImageIndex':  testImageIndices,
+                'username':        usernames, 
+                'recogImageIndex': recogImageIndices,
+                'recogUsername' :  recogUsernames,
+                'recogScore' :     recogImageScores
+            }).set_index('recogImageIndex').sort_values(by='testImageIndex')
+
+        frame_info = getframeinfo(currentframe())
+        print(
+f"""
+Description: This is the output of the positive case from the face recog 2023 algorithm.
+File: {frame_info.filename}
+Line: {frame_info.lineno}
+recogScore values:\n {recogScores}
+"""
+        )
+
+        return recogScores
+
+    def face_recog_2023_run_negative(self):
+        LABEL_FOR_PROGRESS_OF_TEST = "FaceRecog2023NegativeProg"
+
+        if self.pW:
+            self.pW.createProgressbar(LABEL_FOR_PROGRESS_OF_TEST)
+
+        userCount = len(self.users)
+        userFin = 0
+
+        testImageIndices = []
+        recogImageIndices = []
+        recogImageScores = []
+        usernames = []
+        recogUsernames = []
+
+        # reset previously used resources
+        self.FaceRecog2023NegativeUserTimer.clear()
+
+        for user_index,user_ in enumerate(self.users):
+            if self.pW:
+                self.pW.update(
+                    LABEL_FOR_PROGRESS_OF_TEST,
+                    "[FaceRecog2023Negative] Benchmarking User: {}/{}...".format(user_.username,self.userLimit),
+                    userFin/userCount * 100
+                )
+
+            if self.root:
+                self.root.update()
+
+            if len(user_.trainPictures) == 0 or len(user_.recogPictures) == 0:
+                print("WARNING: Training pictures empty!")
+                continue
+
+            self.FaceRecog2023NegativeUserTimer.startTimer(user_)
+
+            # negative case
+            ## Fetch User pictures
+            rand = random.randint(0,userCount - 1)
+            while rand == user_index:
+                rand = random.randint(0,userCount - 1)
+
+            imgs_train = self.users[rand].trainPictures.copy() # Images are flattened
+            imgs_test = user_.recogPictures.copy()
+
+            ## calculate scores
+            scores = self._execute_face_recog_2023_algo(imgs_train, imgs_test)
+
+            ## Prepare Score Dataframe
+            user_.recogScores = None # TODO: This is not used. Use it!
+            for testImageIndex in range(scores.shape[1]):
+                recognisedImageIndex = np.argmin(scores[:, testImageIndex])
+                recognisedImageScore = np.min(scores[:, testImageIndex])
+                testImageIndices.append(testImageIndex)
+                recogImageIndices.append(recognisedImageIndex)
+                recogImageScores.append(recognisedImageScore)
+                usernames.append(user_.username)
+                recogUsernames.append(self.users[rand].username)
+
+            userFin += 1
+            self.FaceRecog2023NegativeUserTimer.endTimer(user_)
+
+        if self.pW:
+            self.pW.finProgress(LABEL_FOR_PROGRESS_OF_TEST)
+
+        recogScores = pd.DataFrame(
+            data = {
+                'testImageIndex':  testImageIndices,
+                'username':        usernames, 
+                'recogImageIndex': recogImageIndices,
+                'recogUsername' :  recogUsernames,
+                'recogScore' :     recogImageScores
+            }).set_index('recogImageIndex').sort_values(by='testImageIndex')
+
+        frame_info = getframeinfo(currentframe())
+        print(
+f"""
+Description: This is the output of the negative case of the face recog 2023 algorithm.
 File: {frame_info.filename}
 Line: {frame_info.lineno}
 recogScore values:\n {recogScores}
