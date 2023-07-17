@@ -33,12 +33,12 @@ if __name__ == "__main__":
     # TODO: implement functionality to enable user to upload his mp4 file
 
         # path for video with presentation    # TODO : VVVVVVVVVVVVVVVV
-    video_path = os.path.join(main_directory, "input", "Wie leitet.mp4")
+    video_path = os.path.join(main_directory, "input", "dateisysteme.mp4")
         # folder where slides are extracted and saved
     slides_folder = os.path.join(main_directory, "output", "slides")
 
     # TODO: install Tesseract on server and link it
-
+    #test
         # path for tesseract
     #tesseract_path = r'E:\E Apps\Tesseract-OCR\tesseract.exe'
         # set where OCR txt file should be saved
