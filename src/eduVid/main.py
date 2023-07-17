@@ -38,7 +38,7 @@ if __name__ == "__main__":
     slides_folder = os.path.join(main_directory, "output", "slides")
 
     # TODO: install Tesseract on server and link it
-    #test
+
         # path for tesseract
     #tesseract_path = r'E:\E Apps\Tesseract-OCR\tesseract.exe'
         # set where OCR txt file should be saved
