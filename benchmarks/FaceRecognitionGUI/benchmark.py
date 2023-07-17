@@ -102,8 +102,10 @@ class benchRecog():
         self.pW = None          # progress window
 
         self.userLimit = 5
-        self.trainPictureAmount = 20
-        self.recogPictureAmount = 10
+        # TODO: Let the user set it in the future
+        # set the picture amount
+        self.trainPictureAmount = 3
+        self.recogPictureAmount = 3
 
         # initialize timers for respective tests
         self.TPUserTimer = BVU.UserTimer()
@@ -161,13 +163,32 @@ class benchRecog():
                 self.exitFlag = True
                 return
 
-        resizedImgs = []
-        self.image_shape = imgs[0].shape
+        # Set shape of the images
+        # This can also be determinted in another way
+        # self.image_shape = self.master.imShape
+        self.image_shape = (125, 94)
 
         # Resize images
         # Since WiRe Algo needs all images to be the same height and width
-        for img in imgs:
-            resizedImgs.append(img.reshape((self.image_shape[1] * self.image_shape[0])))
+        resizedImgs = []
+        for img_index, img in enumerate(imgs):
+            if len(img.shape) == 3 and img.shape[2] == 3: 
+                img = cv2.cvtColor(img.astype("uint8"), cv2.COLOR_BGR2GRAY)
+
+            to_convert = cv2.normalize(
+                src=img, 
+                dst=None, 
+                alpha=0, 
+                beta=255, 
+                norm_type=cv2.NORM_MINMAX, 
+                dtype=cv2.CV_8U
+            )
+            resizedImg = cv2.resize(
+                to_convert.astype("uint8"),
+                dsize=(self.image_shape[1], self.image_shape[0]), 
+                interpolation=cv2.INTER_CUBIC
+            ).flatten()
+            resizedImgs.append(resizedImg)
 
         # update progress window
         if self.pW:
@@ -200,6 +221,7 @@ class benchRecog():
             data = self.df.loc[index]
             username = list(data['name'])[0]
             user_ = userRecog(username)
+            user_.imgShape = self.image_shape
 
             dataRecog = np.asarray(data['img'].iloc[:self.recogPictureAmount])
             dataTrain = np.asarray(data['img'].iloc[self.recogPictureAmount:self.trainPictureAmount+self.recogPictureAmount])
@@ -221,10 +243,11 @@ class benchRecog():
             self.pW.finProgress("benchProg")
 
         # reset users
-        self.users = self.master.DbUsers # TODO: This should be fixed (Don't know why they did that)
         self.dbUsers = self.master.DbUsers
 
-        self.image_shape = self.master.imShape
+        # TODO: Give the user an option to do this
+        # Comment it in if you want to use the database for the benchmark tests
+        # self.users = self.master.DbUsers
 
     def modified_project_faces(self, pcs: np.ndarray, images: np.ndarray, mean_data: np.ndarray) -> np.ndarray:
         """
