@@ -5,6 +5,7 @@
 # @Last modified by:   Julius U. Heller
 # @Last modified time: 2021-06-21T13:27:48+02:00
 import os
+import random
 from sys import stdout
 import sys
 import click
@@ -28,18 +29,21 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','WiReTest'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition','haar_and_lbph'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition'))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','DBM'))
-from modifiedFaceRecog import recogFace
-from face_rec_main import train_add_faces, authorize_faces
-from main import load_images as load_test_imgs
+sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','Logik'))
+#from modifiedFaceRecog import recogFace
+#from face_rec_main import train_add_faces, authorize_faces
+#from main import load_images as load_test_imgs
 import FaceDetection
+import face_recognition
 #from app import routes
+import Face_Recognition.FaceReco_class as LogikFaceRec
 
 from flask import render_template, flash, redirect, url_for
 
 #kim: kommt bald weg
 from app.forms import LoginForm, CreateForm, LoginCameraForm
 #kim: neuer import
-from app.forms import SignUpForm, SignInForm, CameraForm
+from app.forms import SignUpForm, SignInForm, CameraForm, VideoUploadForm
 
 import ssl
 from werkzeug.utils import secure_filename
@@ -51,6 +55,7 @@ import uuid
 import DatabaseManagement as DBM
 import matplotlib as mpl
 import cv2
+import cv2.misc
 import time
 import logging
 import base64
@@ -98,7 +103,7 @@ def logout():
     flask_login.logout_user()
     return render_template('index.html', title='Home',form=form)
     #return redirect(url_for('index'))
-
+    
 @application.route("/deleteuser")
 @flask_login.login_required
 def deleteuser():
@@ -168,9 +173,27 @@ def validationsignup():
 def team():
     return render_template("team.html")
 
+@application.route("/team2")
+def team2():
+    return render_template("team_23.html")
+
 @application.route("/algorithms")
 def algorithms():
     return render_template("algorithms.html")
+
+@application.route("/eduVid", methods=['GET','POST'])
+@flask_login.login_required
+def eduVid():
+    form = VideoUploadForm(request.form)
+    if request.method == 'POST':
+        if form.validate_on_submit():
+            video = form.video.data
+            
+            #TODO: EduVid Implementation
+            
+            
+        return 'Das Video wurde erfolgreich hochgeladen.'  
+    return render_template("eduVid.html", form=form)
 
 @application.route("/userpage")
 def userpage():
@@ -228,7 +251,7 @@ def login():
 
         user = {
                     'username': form.name.data,
-                    'pic' : request.files['pic']
+                    'pic' : request.files.get('pic', None)
                 }
 
         #Verify user
@@ -236,25 +259,39 @@ def login():
         user_uuid = ws.DB.getUser(user['username'])
 
         if user_uuid:
-            
+
             # TODO: Take a look at why it was set to user_uuid[0]
             # user_uuid =uuid.UUID(user_uuid[0]) old code outputted a list
             #user_uuid = uuid.UUID(user_uuid)
-            user['uuid'] = user_uuid
             #Get Picture Path
             #print("test3",file=sys.stdout)
-            f = user['pic']
             #print("test4",file=sys.stdout)
-            filename = secure_filename(f.filename)
-            file_path = os.path.join(application.instance_path, filename)
+
+            user['uuid'] = user_uuid
+            storage = user['pic']
+
+            #filename = secure_filename(pic.filename)
+            #file_path = os.path.join(application.instance_path, filename)
+
+            if storage is None or not storage.content_type.startswith('image/'):
+                rejectionDict['reason'] = "Image Not uploaded!"
+                return render_template('rejection.html',  rejectionDict = rejectionDict, title='Sign In', form=form)
 
             #Save Picture
             #print("test5",file=sys.stdout)
-            f.save(file_path)
             #print("test6",file=sys.stdout)
+
             cookie = request.cookies.get('session_uuid')
 
-            result = ws.authenticatePicture(user,np.asarray(cv2.imread(file_path)),cookie)
+            im_bytes = storage.stream.read()
+            image = Image.open(io.BytesIO(im_bytes))
+            array = np.array(image)
+
+            image.close()
+            storage.close()
+
+            #(729, 1280, 3)
+            result = ws.authenticatePicture(user, array, cookie)
 
             if result:
 
@@ -265,6 +302,7 @@ def login():
 
             else:
                 return render_template('rejection.html',  rejectionDict = rejectionDict, title='Sign In', form=form)
+            
         else:
             print("'{}' not found!".format(user['username']),file=sys.stdout)
             rejectionDict['reason'] = "'{}' not found!".format(user['username'])
@@ -300,7 +338,9 @@ def create():
         #print("test7",file=sys.stdout)
         user = {
                     'username': form.name.data,
-                    'pic1' : request.files['pic1'],
+                    'pic1' : request.files.get('pic1', None),
+                    'pic2' : request.files.get('pic2', None),
+                    'pic3' : request.files.get('pic3', None),
                 }
 
         user_uuid = None
@@ -314,26 +354,47 @@ def create():
             #pic_2 = form.pictureleft.data
             #pic_3 = form.pictureright.data
 
-            pictures = [user['pic1']]
+            pictures = [
+                    user['pic1'],
+                    user['pic2'],
+                    user['pic3'],
+                ]
 
             user_uuid = ws.DB.register_user(user['username'], None)
+            i = 0
+            encodings_saved = False
+            for storage in pictures:
+                i += 1
+                if storage is None or not storage.content_type.startswith('image/'):
+                    rejectionDict['reason'] = f"Image {i} not provided"
+                    ws.DB.deleteUserWithId(user_uuid)
+                    return render_template('rejection.html', rejectionDict=rejectionDict, title='Reject', form=form)
 
-            for pic in pictures:
+                #filename = secure_filename(pic.filename)
+                #print(filename)
+                #file_path = os.path.join(application.instance_path, filename)
+                #pic.save(file_path)
+                #pic_array = cv2.imread(file_path,0)
 
-                filename = secure_filename(pic.filename)
-                print(pic.filename)
-                file_path = os.path.join(application.instance_path, filename)
+                im_bytes = storage.stream.read()
+                image = Image.open(io.BytesIO(im_bytes))
+                array = np.array(image)
 
-            #Save Picture
+                if not encodings_saved:
+                    try:
+                        img = cv2.cvtColor(array, cv2.COLOR_BGR2RGB)
+                        encodings = face_recognition.face_encodings(img)
+                        #print("encodings: ", encodings)
 
-                pic.save(file_path)
+                        ws.DB.update_user_enc(user_uuid, encodings[0])
+                        encodings_saved = True
+                    except:
+                        print("error while calculating encodings")
 
-                #print("test3",file=sys.stdout)
+                image.close()
+                storage.close()
 
-                pic_array = cv2.imread(file_path,0)
-
-                pic_resized = cv2.resize(pic_array, dsize=(98, 116), interpolation=cv2.INTER_CUBIC)
-
+                pic_resized = cv2.resize(array, dsize=(98, 116), interpolation=cv2.INTER_CUBIC)
 
                 pic_uuid = ws.DB.insertTrainingPicture(np.asarray(pic_resized, dtype=np.float64),user_uuid)
 
@@ -344,12 +405,9 @@ def create():
                 #print("'{}' not found!".format(user['username']),file=sys.stdout)
                 #return render_template('rejection.html',  title='Sign In', form=form)
 
-
-
             print("Created User '{}' with uuid: {}".format(user['username'],user_uuid),file=sys.stdout)
 
         else:
-
             print("'{}' already exists!".format(user['username']),file=sys.stdout)
 
             rejectionDict['reason'] = "Benutzername '{}' nicht Verfügbar".format(user['username'])
@@ -695,9 +753,13 @@ def logincamera():
             'bbUser': bbUser
         }
 
+        data = {
+            "username": form.name.data
+        }
+
         #user['login_attempt_time'] = ws.DB.login_user(uuid_id=user_uuid)
 
-        return render_template('webcamJS.html', title='Camera')
+        return render_template('webcamJS.html', title='Camera', data=data)
 
     return render_template('logincamera.html', title='Login with Camera', form = form)
 
@@ -737,6 +799,96 @@ def createcamera():
     return render_template('createcamera.html', title='Create an account', form = form)
 
 
+@application.route('/verifypicture', methods=['GET', 'POST'])
+def verifyPicture():
+
+    if request.method == 'GET':
+
+        if not 'username' in request.args:
+
+            rejectionDict = {
+
+                'reason': 'Unknown',
+                'redirect': '/',
+                'redirectPretty': 'Nothing to verify',
+            }
+
+            return render_template('rejection.html', rejectionDict=rejectionDict)
+
+        username = request.args.get('username')
+
+        user_data = {
+            "name": username,
+            "username": username
+        }
+
+        return render_template('validationauthenticated.html', user=user_data)
+
+    #POST request gets send from main.js in the sendSnapshot() function.
+
+    if request.method == 'POST':
+
+        data = request.get_json()
+
+        #json data needs to have the encoded image & username
+
+        if 'image' not in data:
+            return {"redirect": "/rejection"} #, "data": rejection_data}
+
+        if 'username' not in data:
+            return {"redirect": "/rejection"} #, "data": rejection_data}
+
+        username = data.get('username')
+        img_url = data.get('image').split(',')
+
+        #data url is split into 'image type' and 'actual data'
+        if len(img_url) < 2:
+            return {"redirect": "/rejection"} #, "data": rejection_data}
+
+        #decode image
+        img_data = img_url[1]
+        buffer = np.frombuffer(base64.b64decode(img_data), dtype=np.uint8)
+        camera_img = cv2.imdecode(buffer, cv2.COLOR_BGR2RGB)
+
+        # Verify user
+        user_uuid = ws.DB.getUser(username)
+
+        if user_uuid:
+
+            user_enc = ws.DB.get_user_enc(user_uuid)
+            print("User Enc: ", user_enc)
+
+            if user_enc is None or len(user_enc) == 0:
+                return {"redirect": "/rejection"}
+
+            #p2p function results are List<bool>, List<float>
+            logik = LogikFaceRec.FaceReco()
+            (results, dists) = logik.photo_to_photo(user_enc, camera_img)
+
+            print("p2p results: ")
+            print(results)
+            print(dists)
+
+            #if successfull login but page does not change !
+            result = results[0]
+            if not result:
+                return {"redirect": "/rejection"} #, "data": rejection_data}
+
+            else:
+                thisUser = BigBrotherUser(user_uuid, user['username'], ws.DB)
+                flask_login.login_user(thisUser)
+
+                user_data = {
+                    "username": username
+                }
+
+                #back to base?
+                return {"redirect": "/verifypicture", "data": user_data}
+
+        else:
+            return {"redirect": "/rejection"} #, "data": rejection_data}
+
+    return {"redirect": "/rejection"} #, "data": rejection_data}
 
 def registerUser(username, pictures):
     user = {
@@ -768,13 +920,13 @@ def registerUser(username, pictures):
 
             print("'{}' already exists!".format(username),file=sys.stdout)
 
-            rejectionDict['reason'] = "Benutzername '{}' nicht Verfügbar".format(username)
+            #rejectionDict['reason'] = "Benutzername '{}' nicht Verfügbar".format(username)
 
             #return render_template('rejection.html',  rejectionDict = rejectionDict, title='Reject', form=form)
-            emit('redirect', {'url' : '/rejection'});
+            emit('redirect', {'url' : '/rejection'})
 
     #return render_template('validationsignup.html', name=user['username'])
-    emit('redirect', {'url' : '/validationsignup'});
+    emit('redirect', {'url' : '/validationsignup'})
     return
 
 """
@@ -803,4 +955,5 @@ if __name__=='__main__':
         #socketio.run(app, host='0.0.0.0', port=80, debug=True)
 #app.run()
         #app.run(host='85.214.39.122', port='80', ssl_context=('/etc/letsencrypt/live/h2938366.stratoserver.net/fullchain.pem','/etc/letsencrypt/live/h2938366.stratoserver.net/privkey.pem'))
-        socketio.run(application, host='h2938366.stratoserver.net', port='80', debug=True, ssl_context=('fullchain.pem','privkey.pem'))
+        # socketio.run(application, host='h2938366.stratoserver.net', port='80', debug=True, ssl_context=('fullchain.pem','privkey.pem'))
+        application.run(host='0.0.0.0', port=5000)
