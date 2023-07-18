@@ -5,4 +5,4 @@ have been implemented in here.
 ## Tutorial 
 ## Examples
 ### DatabaseManagement
-    - [Basic video management](../examples/DBM/DatabaseManagement/videoInsertionRetrivalAndDeletion.py)
+- [Basic video management](../examples/DBM/DatabaseManagement/videoInsertionRetrivalAndDeletion.py)
