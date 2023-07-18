@@ -644,7 +644,20 @@ class vid_DB(BBDB):
 
         return [uuid.UUID(user_uuid), filename, video_transcript]
 
-    def getVideoIDOfUser(self, user_uuid: uuid.UUID):
+    def getVideoIDOfUser(self, user_uuid: uuid.UUID) -> typing.List[uuid.UUID]:
+        """
+        Outputs list of video ids.
+
+        Arguments:
+        user_uuid: This is the ID of the user from which you want to have the
+        IDs of the video that belong to the user.
+        
+        Return:
+        Returns a list of video IDs.
+
+        Exception:
+        TypeError -- Gets risen if the type of the input isn't the expected type.
+        """
         if type(user_uuid) != uuid.UUID:
            raise TypeError
 
