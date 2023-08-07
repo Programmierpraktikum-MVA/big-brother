@@ -1,24 +1,16 @@
-from flask import render_template, flash, redirect, url_for
-from app import app
-from app.forms import LoginForm, CreateForm
-
-from werkzeug.utils import secure_filename
 import os
 
-from DBM.DatabaseManagement import BBDB
+from werkzeug.utils import secure_filename
+from flask import render_template, flash, redirect, url_for
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 import pickle
 import uuid
-#h2938366.stratoserver.net
-#
-#
-#
-#MOVED TO __init__.py FOR BETTER IMPORTS
-#
-#
 
+from DBM.DatabaseManagement import BBDB
+from app import app
+from app.forms import LoginForm, CreateForm
 
 @app.route('/')
 @app.route('/index')
@@ -34,9 +26,7 @@ def login():
 
         db = BBDB()
         pic = np.asarray(form.picture.data)
-        #pic = np.asarray(mpl.image.imread('uploads/' + filename))
         db.insertPicture(pic, uuid.uuid4(), 'backend.pictures')
-        #face_recognition(form.picture.data, username)
         return render_template('validationauthenticated.html', ra='a',  user=user)
     return render_template('login.html',  title='Sign In', form=form)
 

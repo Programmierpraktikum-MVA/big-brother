@@ -57,10 +57,7 @@ class BigBrotherUser(UserMixin):
                 self.trainingPictures.append((uuids[pic_index], pic))
             except ValueError:
                 print("Illegal Image Loaded!")
-                # print(format("User: {}\n UUID: {}\npic_uuid: {}", self.name,self.uuid,uuids[pic_index]))
                 print("User: {}\n UUID: {}\npic_uuid: {}".format(self.name, self.uuid, uuids[pic_index]))
-                print(pic.astype('uint8'))
-                print(pic.astype('uint8').shape)
                 return
 
         self.logData = self.DB.getLoginLogOfUser(user_uuid=self.uuid)
