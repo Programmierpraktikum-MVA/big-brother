@@ -9,7 +9,6 @@ class Camera():
         self.to_process = []
         self.to_output = []
 
-
         thread = threading.Thread(target=self.keep_processing, args=())
         thread.daemon = True
         thread.start()
