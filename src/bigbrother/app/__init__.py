@@ -29,7 +29,6 @@ from flask import Flask, Response, render_template, request, session, \
                   make_response, flash, redirect, url_for
 from flask_socketio import SocketIO, emit
 import flask_login
-from config import Config
 
 ## Math
 import numpy as np
@@ -63,6 +62,7 @@ from app.user import BigBrotherUser
 from app.forms import SignUpForm, SignInForm, CameraForm, VideoUploadForm, \
                       LoginForm, CreateForm, LoginCameraForm
 from app.utils import base64_to_pil_image, pil_image_to_base64
+from config import Config
 
 ## ML libraries
 import FaceDetection
