@@ -705,16 +705,14 @@ def verifyPicture():
         data = request.get_json()
         # json data needs to have the encoded image & username
         if ('username' not in data) or ('image' not in data):
-            # TODO: Check whether rejection data is needed or not
-            return {"redirect": "/rejection"} #, "data": rejection_data}
+            return {"redirect": "/rejection"}
 
         username = data.get('username')
         img_url = data.get('image').split(',')
 
         # data url is split into 'image type' and 'actual data'
         if len(img_url) < 2:
-            # TODO: Check whether rejection data is needed or not
-            return {"redirect": "/rejection"} #, "data": rejection_data}
+            return {"redirect": "/rejection"}
 
         # decode image
         img_data = img_url[1]
@@ -736,8 +734,7 @@ def verifyPicture():
             # if successfull login but page does not change !
             result = results[0]
             if not result:
-                # TODO: Check whether rejection data is needed or not
-                return {"redirect": "/rejection"} #, "data": rejection_data}
+                return {"redirect": "/rejection"}
             else:
                 thisUser = BigBrotherUser(user_uuid, user['username'], ws.DB)
                 flask_login.login_user(thisUser)
@@ -747,11 +744,9 @@ def verifyPicture():
                 #back to base?
                 return {"redirect": "/verifypicture", "data": user_data}
         else:
-            # TODO: Check whether rejection data is needed or not
-            return {"redirect": "/rejection"} #, "data": rejection_data}
+            return {"redirect": "/rejection"}
 
-    # TODO: Check whether rejection data is needed or not
-    return {"redirect": "/rejection"} #, "data": rejection_data}
+    return {"redirect": "/rejection"}
 
 def registerUser(username, pictures):
     user = {'username': username}
