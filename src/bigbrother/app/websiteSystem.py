@@ -16,7 +16,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "FaceRecogni
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "DBM"))
 
 import FaceDetection
-from main import load_images as load_test_imgs
+from wireUtils import load_images as load_test_imgs
 from modifiedFaceRecog import recogFace
 from face_rec_main import train_add_faces, authorize_faces
 from cv2RecogClass import cv2Recog
