@@ -26,7 +26,7 @@ class Camera():
         ################## where the hard work is done ############
         # output_img is an PIL image
         output_img = input_img
-        
+
         # output_str is a base64 string in ascii
         output_str = pil_image_to_base64(output_img)
 

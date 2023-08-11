@@ -1,13 +1,14 @@
-from flask_wtf import FlaskForm
-from wtforms import Form, TextField, TextAreaField,StringField, SubmitField, FileField
+from wtforms import Form, TextField, SubmitField
 from wtforms.validators import DataRequired
-from flask_wtf.file import FileAllowed, FileField, FileRequired
-from werkzeug.utils import secure_filename
+
+from flask_wtf.file import FileField
+
 
 class SignInForm(Form):
     name = TextField('Name:', validators=[DataRequired()])
     pic = FileField('Picture:')
     submit = SubmitField('Sign In')
+
 
 class CameraForm(Form):
     name = TextField('Name:', validators=[DataRequired()])

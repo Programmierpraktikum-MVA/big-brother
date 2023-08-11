@@ -66,10 +66,10 @@ def login():
     form = SignInForm(request.form)
 
     rejectionDict = {
-            "reason": "Unknown",
-            "redirect": "login",
-            "redirectPretty": "Zurück zur Anmeldung",
-        }
+        "reason": "Unknown",
+        "redirect": "login",
+        "redirectPretty": "Zurück zur Anmeldung",
+    }
 
     # We need to check if "Sign In" or "Open Camera" got pressed
     # Activates when Sign in Button is pressed
@@ -77,9 +77,9 @@ def login():
         flash("Thanks for logging in")
 
         user = {
-                "username": form.name.data,
-                "pic": request.files.get("pic", None)
-            }
+            "username": form.name.data,
+            "pic": request.files.get("pic", None)
+        }
 
         # Verify user
         # Checks if username is in Database and fetches uuid
@@ -108,16 +108,16 @@ def login():
                 thisUser = BigBrotherUser(user_uuid, user["username"], ws.DB)
                 flask_login.login_user(thisUser)
 
-                return render_template("validationauthenticated.html",  user=user)
+                return render_template("validationauthenticated.html", user=user)
 
             else:
                 return render_template("rejection.html", rejectionDict=rejectionDict, title="Sign In", form=form)
         else:
             print("'{}' not found!".format(user["username"]), file=sys.stdout)
             rejectionDict["reason"] = "'{}' not found!".format(user["username"])
-            return render_template("rejection.html", rejectionDict=rejectionDict,  title="Sign In", form=form)
+            return render_template("rejection.html", rejectionDict=rejectionDict, title="Sign In", form=form)
 
-    return render_template("login.html",  title="Sign In", form=form)
+    return render_template("login.html", title="Sign In", form=form)
 
 
 @socketio.on("input_image_login", namespace="/webcamJS")
@@ -160,8 +160,8 @@ def webcamCommunication():
     while not ws.getAuthorizedFlag(cookie) or not ws.getAuthorizedAbort(cookie):
         try:
             test_message(
-                    ws.getQueue(cookie).get(block=True, timeout=15)
-                )
+                ws.getQueue(cookie).get(block=True, timeout=15)
+            )
         except queue.Empty:
             print("Webcam Queue is Empty! Breaking!", file=sys.stdout)
             break
@@ -219,10 +219,10 @@ def test_message(input_):
             ws.setAuthorizedAbort(cookie, True)
 
             ws.DB.update_login(
-                    user_uuid=user["uuid"],
-                    time=user["login_attempt_time"],
-                    inserted_pic_uuid=res
-                )
+                user_uuid=user["uuid"],
+                time=user["login_attempt_time"],
+                inserted_pic_uuid=res
+            )
             ws.DB.commit()
 
             emit("redirect", {"url": "/loginstep"})
@@ -243,13 +243,13 @@ def test_message(input_):
 def logincamera():
     form = CameraForm(request.form)
     rejectionDict = {
-            "reason": "Unknown",
-            "redirect": "login",
-            "redirectPretty": "Zurück zur Anmeldung",
-        }
+        "reason": "Unknown",
+        "redirect": "login",
+        "redirectPretty": "Zurück zur Anmeldung",
+    }
+
     # We need to check if "Sign In" or "Open Camera" got pressed
     # Activates when Sign in Button is pressed
-
     if request.method == "POST" and form.validate():
         flash("Thanks for logging in")
 
@@ -293,10 +293,10 @@ def verifyPicture():
     if request.method == "GET":
         if "username" not in request.args:
             rejectionDict = {
-                    "reason": "Unknown",
-                    "redirect": "/",
-                    "redirectPretty": "Nothing to verify",
-                }
+                "reason": "Unknown",
+                "redirect": "/",
+                "redirectPretty": "Nothing to verify",
+            }
             return render_template("rejection.html", rejectionDict=rejectionDict)
 
         username = request.args.get("username")

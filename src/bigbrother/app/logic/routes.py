@@ -29,10 +29,10 @@ def gestureReco():
     form = CameraForm(request.form)
 
     rejectionDict = {
-            "reason": "Unknown",
-            "redirect": "login",
-            "redirectPretty": "Back to login",
-        }
+        "reason": "Unknown",
+        "redirect": "login",
+        "redirectPretty": "Back to login",
+    }
 
     if request.method == "GET":
         return render_template("gestureReco.html", form=form)
