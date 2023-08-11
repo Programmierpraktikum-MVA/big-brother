@@ -22,10 +22,10 @@ from PIL import Image
 import copy
 
 
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','FaceRecognition','haar_and_lbph'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','FaceRecognition', 'WireFaceRecognition'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','FaceRecognition'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','DBM'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition','haar_and_lbph'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition', 'WireFaceRecognition'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','DBM'))
 
 from app.user import BigBrotherUser
 import DatabaseManagement as DBM
