@@ -12,14 +12,14 @@ from app.login.routes import logincamera
 main = Blueprint('main', __name__)
 
 
-@main.route("/team")
+@main.route("/team21")
 def team():
-    return render_template("team.html")
+    return render_template("team21.html")
 
 
-@main.route("/team2")
+@main.route("/team23")
 def team2():
-    return render_template("team_23.html")
+    return render_template("team23.html")
 
 
 @main.route("/algorithms")
