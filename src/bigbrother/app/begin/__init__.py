@@ -48,18 +48,17 @@ import click
 
 # Own libraries
 ## Tells python where to search for modules
-sys.path.append(os.path.join(os.path.dirname(__file__),".."))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','WiReTest'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition','haar_and_lbph'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','FaceRecognition'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','DBM'))
-sys.path.append(os.path.join(os.path.dirname(__file__), '..','..','Logik'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..','..','WiReTest'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..','..','FaceRecognition','haar_and_lbph'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..','..','FaceRecognition'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..','..','DBM'))
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..','..','Logik'))
 
 ## GUI and frontend libraries
 from app import application, socketio, login_manager, ws
 from app.user import BigBrotherUser
-from app.forms import SignUpForm, SignInForm, CameraForm, VideoUploadForm, \
-                      LoginForm, CreateForm, LoginCameraForm
 from app.utils import base64_to_pil_image, pil_image_to_base64
 from config import Config
 
@@ -72,6 +71,3 @@ import Gesture_Recognition.GestureReco_class as GestureRec
 ## Databse and website management
 import DatabaseManagement as DBM
 import websiteSystem
-
-
-
