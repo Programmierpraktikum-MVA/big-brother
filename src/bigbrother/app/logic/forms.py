@@ -18,3 +18,8 @@ class VideoUploadForm(Form):
 class CameraForm(Form):
     name = TextField('Name:', validators=[DataRequired()])
     submit = SubmitField('Sign In')
+
+class EduVidForm(Form):
+    eduName = TextField('Name')
+    eduVid = FileField('Video')
+    submit = SubmitField('Upload')
