@@ -266,6 +266,7 @@ def eduVid():
         if not video:
             return render_template("eduVid.html", form=form)
 
+        # deletes every video file in tmp folder
         for vid_file in os.listdir(application.config['TMP_VIDEO_FOLDER']):
             if vid_file.endswith(".md"):
                 continue
