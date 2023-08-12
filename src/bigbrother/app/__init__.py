@@ -115,7 +115,7 @@ def formatSeconds(seconds):
     if minutes > 0:
         formatted_time_parts.append(f"{minutes}m")
 
-    if remaining_seconds > 0:
+    if remaining_seconds > 0 or (hours == 0 and minutes == 0):
         formatted_time_parts.append(f"{remaining_seconds}s")
 
     return "".join(formatted_time_parts)
@@ -266,28 +266,39 @@ def eduVid():
         if not video:
             return render_template("eduVid.html", form=form)
 
+        for vid_file in os.listdir(application.config['TMP_VIDEO_FOLDER']):
+            if vid_file.endswith(".md"):
+                continue
+            del_path = os.path.join(application.config['TMP_VIDEO_FOLDER'], vid_file)
+            if os.path.isfile(del_path):
+                os.remove(del_path)
+
         file_path = os.path.join(application.config['TMP_VIDEO_FOLDER'], video.filename)
         video.save(file_path)
 
         video_url = url_for('serve_video', filename=video.filename)
 
+        # TODO: get time stamps from logic
+        # time stamps should be <label>:<time in seconds>
         video_info = {
             "title": name,
             "url": video_url,
             "time_stamps": [
-                {"Intro": 1.0},
-                {"Concept": 2.0},
-                {"Conclusion": 2.0},
-                {"Conclusion": 2.0},
-                {"Conclusion": 2.0},
-                {"Conclusion": 2.0},
-                {"Conclusion": 2.0},
-                {"Conclusion": 2.0},
-                {"Conclusion": 2.0}
+                {"Intro": 0.0},
+                {"Concept": 10.0},
+                {"Conclusion": 180.0},
+                {"Conclusion2": 210.0},
+                {"Conclusion3": 300.0},
+                {"Conclusion4": 492.0},
+                {"Conclusion5": 688.0},
+                {"Conclusion6": 700.0},
+                {"Bye": 777.0},
+                {"EOF": 7777.0}
             ]
         }
 
         return render_template("eduVidPlayer.html", video_info=video_info)
+
     return render_template("eduVid.html", form=form)
 
 @application.route("/userpage")
