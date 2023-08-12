@@ -1,9 +1,7 @@
-# Standard libraries
 import os
 import sys
 
 
-# Third party
 from flask import (render_template, request, Blueprint, url_for, 
                    send_from_directory)
 import flask_login
@@ -11,15 +9,13 @@ import flask_login
 import cv2
 import cv2.misc
 
-# Own libraries
+
 # Tells python where to search for modules
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "Logik"))
 
-# GUI and frontend libraries
 from app.blueprints.logic.forms import VideoUploadForm, CameraForm, EduVidForm
 from app import application
 
-# ML libraries
 import Gesture_Recognition.GestureReco_class as GestureRec
 
 
@@ -40,7 +36,6 @@ def gestureReco():
         return render_template("gestureReco.html", form=form)
 
     if request.method == "POST" and form.validate():
-
         capture = cv2.VideoCapture(0)
         gesture = GestureRec.GestureReco()
 
@@ -71,16 +66,14 @@ def serve_video(filename):
 @logic.route("/eduVid", methods=["GET", "POST"])
 @flask_login.login_required
 def eduVid():
-
     form = EduVidForm(request.form)
 
     if request.method == "POST":
         name = request.form.get("eduName")
         video = request.files.get("eduVid")
 
-        if not name:
-            return render_template("eduVid.html", form=form)
-        if not video:
+        # TODO: eliminate this case with form validation
+        if (not name) or (not video):
             return render_template("eduVid.html", form=form)
 
         # deletes every video file in tmp folder
@@ -118,4 +111,3 @@ def eduVid():
         return render_template("eduVidPlayer.html", video_info=video_info)
 
     return render_template("eduVid.html", form=form)
-

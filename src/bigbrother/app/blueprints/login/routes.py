@@ -41,17 +41,15 @@ blueprint_login = Blueprint("blueprint_login", __name__)
 
 @login_manager.user_loader
 def load_user(user_id):
+    # TODO: Make sure that the user_id is always from type uuid.UUID
     print("loading user:", user_id, file=sys.stdout)
 
+    # TODO: How can this be a tuple?
     if type(user_id) == tuple:
         user_id = user_id[0]
 
-    loadedUser = None
-    for bbUser in ws.BigBrotherUserList:
-        if bbUser.uuid == user_id:
-            loadedUser = bbUser
-            bbUser.sync()
-            print("{} is Admin: {}".format(bbUser.name, bbUser.admin))
+    loaded_user = ws.get_user_by_id(user_id)
+    loaded_user.sync()
     return loadedUser
 
 
@@ -60,7 +58,7 @@ def loginstep():
     flask_login.login_user(user["bbUser"])
     return render_template("validationauthenticated.html")
 
-
+# TODO: Restructure to correct the abstraction levels.
 @blueprint_login.route("/login", methods=["GET", "POST"])
 def login():
     form = SignInForm(request.form)
@@ -68,11 +66,13 @@ def login():
     rejectionDict = {
         "reason": "Unknown",
         "redirect": "login",
-        "redirectPretty": "Zurück zur Anmeldung",
+        "redirectPretty": "Back to login",
     }
 
+    # TODO: That does this comment mean?
     # We need to check if "Sign In" or "Open Camera" got pressed
     # Activates when Sign in Button is pressed
+    # TODO: You should use valitaion_on_submit! Same reason as before.
     if request.method == "POST" and form.validate():
         flash("Thanks for logging in")
 
@@ -82,9 +82,8 @@ def login():
         }
 
         # Verify user
-        # Checks if username is in Database and fetches uuid
         user_uuid = ws.DB.getUser(user["username"])
-
+        # user exists
         if user_uuid:
             user["uuid"] = user_uuid
             storage = user["pic"]
@@ -111,15 +110,19 @@ def login():
                 return render_template("validationauthenticated.html", user=user)
 
             else:
-                return render_template("rejection.html", rejectionDict=rejectionDict, title="Sign In", form=form)
+                return render_template("rejection.html",
+                                       rejectionDict=rejectionDict,
+                                       title="Sign In",
+                                       form=form)
         else:
-            print("'{}' not found!".format(user["username"]), file=sys.stdout)
             rejectionDict["reason"] = "'{}' not found!".format(user["username"])
-            return render_template("rejection.html", rejectionDict=rejectionDict, title="Sign In", form=form)
+            return render_template("rejection.html", rejectionDict=rejectionDict,
+                                   title="Sign In", form=form)
 
     return render_template("login.html", title="Sign In", form=form)
 
 
+# TODO: What exactly does the input mean?
 @socketio.on("input_image_login", namespace="/webcamJS")
 def queueImage_login(input_):
     cookie = request.cookies.get("session_uuid")
@@ -176,18 +179,19 @@ def webcamCommunication():
 # Socket source from: https://github.com/dxue2012/python-webcam-flask
 # @socketio.on("input image", namespace="/webcamJS")
 def test_message(input_):
+    # TODO: Write down what exactly the message tests
     cookie = request.cookies.get("session_uuid")
     ws.setAuthorizedAbort(cookie, False)
 
     if ws.checkinvalidStreamCount(cookie):
         ws.resetinvalidStreamCount(cookie)
         ws.setAuthorizedAbort(cookie, True)
+        # TODO: Why is anything emmited if the socketio-decorator is turned off?
         emit("redirect", {"url": "/rejection"})
 
-    print("Testing...")
-
-    # CAUTION: test_message is called multiple times from the client (for every image).
-    # Figure out how many pics are needed and then close socket
+    # CAUTION: test_message is called multiple times from the client 
+    # (for every image). Figure out how many pics are needed and then 
+    # close socket
     input_ = input_.split(",")[1]
     image_data = input_  # Do your magical Image processing here!!
 
@@ -202,6 +206,7 @@ def test_message(input_):
     cutImg = FaceDetection.cut_rectangle(copy.deepcopy(img))
     cv2_img = FaceDetection.make_rectangle(img)
 
+    # TODO: What does this comment mean?
     # TODO: Authentication with cv2_img and users
     cv2.imwrite("reconstructed.jpg", cv2_img)
     retval, buffer = cv2.imencode(".jpg", cv2_img)
@@ -248,6 +253,9 @@ def logincamera():
         "redirectPretty": "Zurück zur Anmeldung",
     }
 
+    # TODO: Why do we need to check it? Is it GET vs POST? What if 
+    # form.validate() == false?
+
     # We need to check if "Sign In" or "Open Camera" got pressed
     # Activates when Sign in Button is pressed
     if request.method == "POST" and form.validate():
@@ -287,6 +295,8 @@ def logincamera():
     return render_template("logincamera.html", title="Login with Camera", form=form)
 
 
+# TODO: Why can't we verify the picture when the button in login is pressed?
+# Do we really need to have a route in order to do this? 
 @blueprint_login.route("/verifypicture", methods=["GET", "POST"])
 def verifyPicture():
 
@@ -307,7 +317,7 @@ def verifyPicture():
         return render_template("validationauthenticated.html", user=user_data)
 
     # POST request gets send from main.js in the sendSnapshot() function.
-    if request.method == "POST":
+    elif request.method == "POST":
         data = request.get_json()
         # json data needs to have the encoded image & username
         if ("username" not in data) or ("image" not in data):

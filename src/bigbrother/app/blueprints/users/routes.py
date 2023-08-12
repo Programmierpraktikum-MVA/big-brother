@@ -5,6 +5,7 @@ import sys
 import base64
 import copy
 import queue
+import uuid
 
 
 # Third party
@@ -12,6 +13,7 @@ import queue
 from flask import render_template, request, flash, Blueprint
 from flask_socketio import emit
 import flask_login
+from flask_login import login_required, logout_user
 
 # Math
 import numpy as np
@@ -29,6 +31,7 @@ import cv2.misc
 from app import application, socketio, ws
 from app.user import BigBrotherUser
 from app.blueprints.users.forms import SignInForm, CameraForm, SignUpForm
+from app.blueprints.users.utils import register_user
 
 # ML libraries
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "FaceRecognition"))
@@ -39,20 +42,20 @@ users = Blueprint("users", __name__)
 
 
 @users.route("/logout")
-@flask_login.login_required
+@login_required
 def logout():
     form = SignInForm(request.form)
-    flask_login.logout_user()
+    logout_user()
     return render_template("index.html", title="Home", form=form)
 
 
 @users.route("/deleteuser")
-@flask_login.login_required
+@login_required
 def deleteuser():
     form = SignInForm(request.form)
-    flask_login.logout_user()
-    display_uuid = request.args.get("usr", default=1, type=str)
-    ws.DB.deleteUserWithId(display_uuid)
+    logout_user()
+    user_uuid = uuid.UUID(request.args.get("usr", default=1, type=str))
+    ws.DB.deleteUserWithId(user_uuid)
     return render_template("index.html", title="Home", form=form)
 
 
@@ -64,7 +67,8 @@ def rejection():
         "redirect": "create",
         "redirectPretty": "Back to registration",
     }
-    return render_template("rejection.html", rejectionDict=rejectionDict, title="Reject", form=form)
+    return render_template("rejection.html", rejectionDict=rejectionDict,
+                           title="Reject", form=form)
 
 
 @users.route("/validationsignup")
@@ -74,27 +78,28 @@ def validationsignup():
 
     if user_uuid:
         ws.BigBrotherUserList.append(BigBrotherUser(user_uuid, user, ws.DB))
-        print("Created UserObject '{}' with uuid: {}".format(user, user_uuid), file=sys.stdout)
         return render_template("validationsignup.html", name=user)
 
-    return render_template("index.html", BigBrotherUserList=ws.BigBrotherUserList, form=form)
+    return render_template("index.html",
+                           BigBrotherUserList=ws.BigBrotherUserList, form=form)
 
 
 @users.route("/userpage")
 def userpage():
-
-    display_uuid = request.args.get("usr", default=1, type=str)
-    displayUser = None
-    for user in ws.BigBrotherUserList:
-        if user.uuid == display_uuid:
-            displayUser = user
-
-    return render_template("userpage.html", BigBrotherUserList=ws.BigBrotherUserList, displayUser=displayUser)
+    display_uuid = uuid.UUID(request.args.get("usr", default=1, type=str))
+    display_user = ws.get_user_by_id(display_uuid)
+    return render_template("userpage.html",
+                           BigBrotherUserList=ws.BigBrotherUserList,
+                           displayUser=display_user)
 
 
 @users.route("/create", methods=["GET", "POST"])
 def create():
     form = SignUpForm(request.form)
+
+    # TODO: Validate_on_submit should be should be used instead!
+    # Refer to this article: 
+    # https://stackoverflow.com/questions/43002323/difference-between-form-validate-on-submit-and-form-validate
     if request.method == "POST" and form.validate():
         rejectionDict = {
             "reason": "Unknown",
@@ -117,14 +122,17 @@ def create():
             ]
 
             user_uuid = ws.DB.register_user(user["username"], None)
-            i = 0
+            image_index = 0
             encodings_saved = False
             for storage in pictures:
-                i += 1
-                if storage is None or not storage.content_type.startswith("image/"):
-                    rejectionDict["reason"] = f"Image {i} not provided"
+                image_index += 1
+                # TODO: Find out what the second condition is for!
+                if (storage is None) or (not storage.content_type.startswith("image/")):
+                    rejectionDict["reason"] = f"Image {image_index} not provided"
                     ws.DB.deleteUserWithId(user_uuid)
-                    return render_template("rejection.html", rejectionDict=rejectionDict, title="Reject", form=form)
+                    return render_template("rejection.html",
+                                           rejectionDict=rejectionDict,
+                                           title="Reject", form=form)
 
                 im_bytes = storage.stream.read()
                 image = Image.open(io.BytesIO(im_bytes))
@@ -137,99 +145,75 @@ def create():
                         ws.DB.update_user_enc(user_uuid, encodings[0])
                         encodings_saved = True
                     except:
-                        print("error while calculating encodings")
+                        # TODO: What exception does this cover? Specify the
+                        # exception and handle it properly!
+                        print("Error while calculating encodings")
                 image.close()
                 storage.close()
+                
+                # TODO: Avoid magic numbers: (98, 116)
+                pic_resized = cv2.resize(
+                    array,
+                    dsize=(98, 116),
+                    interpolation=cv2.INTER_CUBIC
+                )
+                pic_uuid = ws.DB.insertTrainingPicture(
+                    np.asarray(pic_resized, dtype=np.float64),
+                    user_uuid
+                )
 
-                pic_resized = cv2.resize(array, dsize=(98, 116), interpolation=cv2.INTER_CUBIC)
-                pic_uuid = ws.DB.insertTrainingPicture(np.asarray(pic_resized, dtype=np.float64), user_uuid)
-                print("Inserted Picture for user_uuid: '{}' with pic_uuid: {}".format(user_uuid, pic_uuid), file=sys.stdout)
-
-            ws.BigBrotherUserList.append(BigBrotherUser(user_uuid, user["username"], ws.DB))
-            print("Created User '{}' with uuid: {}".format(user["username"], user_uuid), file=sys.stdout)
+            ws.BigBrotherUserList.append(
+                BigBrotherUser(user_uuid, user["username"], ws.DB)
+            )
         else:
-            print("'{}' already exists!".format(user["username"]), file=sys.stdout)
-            rejectionDict["reason"] = "Benutzername '{}' nicht Verfügbar".format(user["username"])
-            return render_template("rejection.html", rejectionDict=rejectionDict, title="Reject", form=form)
+            rejectionDict["reason"] = "Username '{}' is not available!".format(user["username"])
+            return render_template("rejection.html",
+                                   rejectionDict=rejectionDict,
+                                   title="Reject", form=form)
 
         return render_template("validationsignup.html", name=user["username"])
-    else:
-        flash("Error: All Fields are Required")
+
+    # TODO: Implement field is required message below the fields in case
+    # the user didn't enter any values in the field.
 
     return render_template("create.html", form=form)
 
 
-@socketio.on("input_image_create", namespace="/createWithCamera")
-def queueImage_create(input):
-    print("Putting Image...")
-    ws.WEBCAM_IMAGE_QUEUE_CREATE.put(input)
+@users.route("/webcamJS", methods=["GET", "POST"])
+def webcamJS():
+    return render_template("webcamJS.html", title="Camera")
 
 
-@socketio.on("start_transfer_create", namespace="/createWithCamera")
-def webcamCommunication_create():
-    emit("ack_transfer", {"foo": "bar"}, namespace="/createWithCamera")
-    cookie = request.cookies.get("session_uuid")
-    print("ack_transfer...")
-    while not ws.authorizedFlag or not ws.authorizedAbort:
-        try:
-            create_with_image(ws.WEBCAM_IMAGE_QUEUE_CREATE.get(block=True, timeout=5))
-        except queue.Empty:
-            print("Webcam Queue is Empty! Breaking!", file=sys.stdout)
-            break
-
-    ws.WEBCAM_IMAGE_QUEUE_CREATE = queue.Queue()
-    ws.authorizedAbort = False
-    ws.authorizedFlag = False
-    ws.resetinvalidStreamCount(cookie)
+@users.route("/webcamCreate", methods=["GET", "POST"])
+def webcamCreate():
+    return render_template("webcamCreate.html", title="Camera")
 
 
-# TODO: Take a look at this and why it's so similar to the other routes in
-# other modules
+@users.route("/createcamera", methods=["GET", "POST"])
+def createcamera():
+    form = CameraForm(request.form)
 
-# Retrieving Image from Client javascript side, analyze it and send it back
-# Socket source from: https://github.com/dxue2012/python-webcam-flask
-# Used for Registration
-@socketio.on("input image", namespace="/createWithCamera")
-def create_with_image(input_):
-    cookie = request.cookies.get("session_uuid")
-    ws.setAuthorizedAbort(cookie, False)
+    ws.createPictures = []
+    rejectionDict = {
+        "reason": "Unknown",
+        "redirect": "login",
+        "redirectPretty": "Back to registration",
+    }
 
-    # Figure out how many pics are needed and then close socket
-    input_ = input_.split(",")[1]
+    # TODO: Use validate_on_submit() instead.
+    if request.method == "POST" and form.validate():
+        flash("Thanks for signing up")
 
-    image_data = input_  # Do your magical Image processing here!!
+        global user
+        username = form.name.data
+        user_uuid = ws.DB.getUser(username)
+        if user_uuid:
+            rejectionDict["reason"] = "The username '{}' already exists!".format(form.name.data)
+            return render_template("rejection.html", rejectionDict=rejectionDict, title="Sign In", form=form)
 
-    # user is global, use it with cv2_img for authentication
-    # OpenCV part decode and encode
-    img = imread(io.BytesIO(base64.b64decode(image_data)))
-    cutImg = np.asarray(FaceDetection.cut_rectangle(copy.deepcopy(img)))
-    cv2_img = FaceDetection.make_rectangle(img)
-    cv2.imwrite("reconstructed.jpg", cv2_img)
-    retval, buffer = cv2.imencode(".jpg", cv2_img)
-    b = base64.b64encode(buffer)
-    b = b.decode()
-    image_data = "data:image/jpeg;base64," + b
-
-    print("Check : {} < 5, {} < {}, {} > 50".format(
-          len(ws.createPictures), len(cutImg), len(img), len(cutImg)))
-    print(len(ws.createPictures) < 5 and len(cutImg) < len(img) and len(cutImg) > 50)
-    if len(ws.createPictures) < 5 and len(cutImg) < len(img) and len(cutImg) > 50:
-        ws.createPictures.append(cutImg)
-        if len(ws.createPictures) >= 5:
-            cookie = request.cookies.get("session_uuid")
-            ws.setAuthorizedAbort(cookie, True)
-            registerUser(user, ws.createPictures)
-            emit("redirect", {"url": "/validationsignup"})
-        else:
-            emit("out-image-event", {"image_data": image_data}, namespace="/createWithCamera")
-    else:
-        ws.addinvalidStreamCount(cookie)
-        if ws.checkinvalidStreamCount(cookie):
-            cookie = request.cookies.get("session_uuid")
-            ws.setAuthorizedAbort(cookie, True)
-            emit("redirect", {"url": "/rejection"})
-
-    emit("out-image-event", {"image_data": image_data}, namespace="/createWithCamera")
+        user = username
+        return render_template("webcamCreate.html", title="Camera")
+    return render_template("createcamera.html", title="Create an account", form=form)
 
 
 # TODO: Take a look at what this is about
@@ -256,56 +240,79 @@ def disconnected():
     application.logger.info("Websocket client disconnected")
 
 
-@users.route("/webcamJS", methods=["GET", "POST"])
-def webcamJS():
-    return render_template("webcamJS.html", title="Camera")
+# TODO: Take a look at this and why it's so similar to the other routes in
+# other modules
+# TODO: Find out that this does. The emmiting line in createWithCamera.js
+# is commented out!
+# TODO: What is the input_?
 
+# Retrieving Image from Client javascript side, analyze it and send it back
+# Socket source from: https://github.com/dxue2012/python-webcam-flask
+# Used for Registration
+@socketio.on("input image", namespace="/createWithCamera")
+def create_with_image(input_):
+    cookie = request.cookies.get("session_uuid")
+    ws.setAuthorizedAbort(cookie, False)
 
-@users.route("/webcamCreate", methods=["GET", "POST"])
-def webcamCreate():
-    return render_template("webcamCreate.html", title="Camera")
+    # Figure out how many pics are needed and then close socket
+    input_ = input_.split(",")[1]
 
+    image_data = input_  # Do your magical Image processing here!!
 
-@users.route("/createcamera", methods=["GET", "POST"])
-def createcamera():
-    form = CameraForm(request.form)
+    # user is global, use it with cv2_img for authentication
+    # OpenCV part decode and encode
+    img = imread(io.BytesIO(base64.b64decode(image_data)))
+    cutImg = np.asarray(FaceDetection.cut_rectangle(copy.deepcopy(img)))
+    cv2_img = FaceDetection.make_rectangle(img)
+    cv2.imwrite("reconstructed.jpg", cv2_img)
+    retval, buffer = cv2.imencode(".jpg", cv2_img)
+    b = base64.b64encode(buffer)
+    b = b.decode()
+    image_data = "data:image/jpeg;base64," + b
 
-    ws.createPictures = []
-    rejectionDict = {
-        "reason": "Unknown",
-        "redirect": "login",
-        "redirectPretty": "Back to registration",
-    }
-
-    if request.method == "POST" and form.validate():
-        flash("Thanks for signing up")
-
-        global user
-        username = form.name.data
-        user_uuid = ws.DB.getUser(username)
-
-        if user_uuid:
-            print("'{}' found!".format(form.name.data), file=sys.stdout)
-            rejectionDict["reason"] = "'{}' already found!".format(form.name.data)
-            return render_template("rejection.html", rejectionDict=rejectionDict, title="Sign In", form=form)
-
-        user = username
-
-        return render_template("webcamCreate.html", title="Camera")
-
-    return render_template("createcamera.html", title="Create an account", form=form)
-
-
-def registerUser(username, pictures):
-    user_uuid = None
-
-    if not ws.DB.getUser(username):
-        user_uuid = ws.DB.register_user(username)
-        for pic in pictures:
-            pic_uuid = ws.DB.insertTrainingPicture(np.asarray(pic, dtype=np.float64), user_uuid)
-            print("Inserted Picture for user_uuid: '{}' with pic_uuid: {}".format(user_uuid, pic_uuid), file=sys.stdout)
+    # TODO: What do those magic number mean?
+    print("Check : {} < 5, {} < {}, {} > 50".format(
+          len(ws.createPictures), len(cutImg), len(img), len(cutImg)))
+    print(len(ws.createPictures) < 5 and len(cutImg) < len(img) and len(cutImg) > 50)
+    if len(ws.createPictures) < 5 and len(cutImg) < len(img) and len(cutImg) > 50:
+        ws.createPictures.append(cutImg)
+        if len(ws.createPictures) >= 5:
+            cookie = request.cookies.get("session_uuid")
+            ws.setAuthorizedAbort(cookie, True)
+            register_user(user, ws.createPictures)
+            emit("redirect", {"url": "/validationsignup"})
+        else:
+            emit("out-image-event", {"image_data": image_data}, namespace="/createWithCamera")
     else:
-        print("'{}' already exists!".format(username), file=sys.stdout)
-        emit("redirect", {"url": "/rejection"})
-    emit("redirect", {"url": "/validationsignup"})
-    return
+        ws.addinvalidStreamCount(cookie)
+        if ws.checkinvalidStreamCount(cookie):
+            cookie = request.cookies.get("session_uuid")
+            ws.setAuthorizedAbort(cookie, True)
+            emit("redirect", {"url": "/rejection"})
+
+    emit("out-image-event", {"image_data": image_data}, namespace="/createWithCamera")
+
+
+@socketio.on("input_image_create", namespace="/createWithCamera")
+def queueImage_create(input):
+    ws.WEBCAM_IMAGE_QUEUE_CREATE.put(input)
+
+
+@socketio.on("start_transfer_create", namespace="/createWithCamera")
+def webcamCommunication_create():
+    emit("ack_transfer", {"foo": "bar"}, namespace="/createWithCamera")
+    cookie = request.cookies.get("session_uuid")
+    while not ws.authorizedFlag or not ws.authorizedAbort:
+        try:
+            create_with_image(ws.WEBCAM_IMAGE_QUEUE_CREATE.get(block=True, timeout=5))
+        except queue.Empty:
+            print("Webcam Queue is Empty! Breaking!", file=sys.stdout)
+            break
+
+    ws.WEBCAM_IMAGE_QUEUE_CREATE = queue.Queue()
+    # TODO: Find out what the flags are for they don't seem to do anything.
+    # Sometimes they are commented out and sometimes commented in (in the same
+    # context)
+    ws.authorizedAbort = False
+    ws.authorizedFlag = False
+    ws.resetinvalidStreamCount(cookie)

@@ -2,6 +2,8 @@ import os
 import sys
 import time
 import queue
+import uuid
+import typing
 
 
 import numpy as np
@@ -23,12 +25,15 @@ from cv2RecogClass import cv2Recog
 
 import DatabaseManagement as DBM
 
-
+# TODO: Make this conform with the naming convention.
 class websiteSystem:
     def __init__(self):
         self.createPictures = []
+        # TODO: What are those flags for?
         self.authorizedFlag = False
         self.authorizedAbort = False
+
+        # TODO: What are those variables for?
         self.emptypiccount = 0
         self.WEBCAM_IMAGE_QUEUE_LOGIN = queue.Queue()
         self.WEBCAM_IMAGE_QUEUE_CREATE = queue.Queue()
@@ -40,6 +45,7 @@ class websiteSystem:
 
         self.DB = DBM.wire_DB()
 
+        # Keeps track of the users and their session keys
         self.BigBrotherUserList = []
         userDict = self.DB.getUsers().items()
         userCount = len(userDict)
@@ -50,35 +56,28 @@ class websiteSystem:
             if round((counter / userCount) * 100) % 25 == 0:
                 print("{}% finished...".format(round((counter / userCount) * 100)))
 
-        def getBBUser(self, **kwargs):
-            username = ""
-            uuid = None
-            isValidArgument = False
+        # TODO: Reimplement this for more efficient and correct searching
+        def get_user_by_id(self, user_uuid: uuid.UUID) -> typing.Optional[BigBrotherUser]:
+            """
+            Searches and returns the a user with a certain id.
 
-            # TODO: This can be done easier and cleaner with more modern python
-            for key, value in kwargs.items():
-                if key == "username":
-                    if type(value) == str:
-                        username = value
-                        isValidArgument = True
-                    else:
-                        raise RuntimeException("invalid username! : {}".format(value))
-                if key == "uuid":
-                    if type(value) == uuid.UUID:
-                        uuid = value
-                        isValidArgument = True
-                    elif type(value) == str:
-                        uuid = uuid.UUID(value)
-                        isValidArgument = True
-                    else:
-                        raise RuntimeException("invalid uuid! : {}".format(value))
-            if not isValidArgument:
-                raise RuntimeException("Invalid Arguments! : {}".format(kwargs.items()))
+            Arguments:
+            user_uuid -- The ID of the user that you are trying to search.
 
+            Return:
+            Returns the user with the give ID. Returns None if the user
+            with the ID doesn't exist.
+
+            Exception:
+            TypeError -- Gets risen if the type of the arguments is incorrect.
+            """
+            if type(user_uuid) != uuid.UUID:
+                raise TypeError
+            
+            # TODO: Implement a more efficient way of searching
             for user in self.BigBrotherUserList:
-                if user.uuid == uuid or user.username == username:
+                if user.uuid == user_uuid:
                     return user
-
             return None
 
     def setAuthorizedAbort(self, session_uuid, value):
@@ -139,14 +138,7 @@ class websiteSystem:
 
             recogUsernames = recogFace([pic, user_uuid])
 
-            # TODO: Review and remove if not necessary
-            print("Running Query...", file=sys.stdout)
-            t0 = time.time()
-            print("UUID: ", user_uuid)
             imgs_raw, uuids = self.DB.getTrainingPictures(user_uuid=user_uuid)
-            t1 = time.time()
-            print("Took: {}s".format(t1-t0), file=sys.stdout)
-
             maxShape = (0, 0)
             for im in imgs_raw:
                 if im.shape[0]*im.shape[1] > maxShape[0]*maxShape[1]:

@@ -4,7 +4,7 @@ from wtforms.validators import DataRequired
 
 class SignInForm(Form):
     name = TextField('Name:', validators=[DataRequired()])
-    pic = FileField('Picture:')
+    pic = FileField('Picture:', validators=[DataRequired()])
     submit = SubmitField('Sign In')
 
 
@@ -15,7 +15,7 @@ class CameraForm(Form):
 
 class SignUpForm(Form):
     name = TextField('Name:', validators=[DataRequired()])
-    pic1 = FileField('Picture:')
-    pic2 = FileField('Picture:')
-    pic3 = FileField('Picture:')
+    pic1 = FileField('Picture:', validators=[DataRequired()])
+    pic2 = FileField('Picture:', validators=[DataRequired()])
+    pic3 = FileField('Picture:', validators=[DataRequired()])
     submit = SubmitField('Sign Up')

@@ -19,7 +19,17 @@ class CameraForm(Form):
     name = TextField('Name:', validators=[DataRequired()])
     submit = SubmitField('Sign In')
 
+
+# TODO: Basically the same as VideoUploadForm, discuss whether this is
+# still needed! We should probably delete this and use VideoUploadForm
+# instead.
 class EduVidForm(Form):
-    eduName = TextField('Name')
-    eduVid = FileField('Video')
+    eduName = TextField('Name', validators=[DataRequired()])
+    eduVid = FileField(
+        'Video',
+        validators=[
+            DataRequired(),
+            FileAllowed(['.mp4'], 'MP4 Videos only!')
+        ]
+    )
     submit = SubmitField('Upload')
