@@ -6,7 +6,7 @@ from flask import render_template, make_response, request, Blueprint
 
 # Own libraries
 from app import ws
-from app.login.routes import logincamera
+from app.blueprints.login.routes import logincamera
 
 
 main = Blueprint('main', __name__)

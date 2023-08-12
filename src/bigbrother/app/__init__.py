@@ -59,10 +59,10 @@ else:
 socketio = SocketIO(application)
 
 # This has to be at the bottom in order to avoid cyclic dependencies
-from app.main.routes import main
-from app.logic.routes import logic
-from app.users.routes import users
-from app.login.routes import blueprint_login
+from app.blueprints.main.routes import main
+from app.blueprints.logic.routes import logic
+from app.blueprints.users.routes import users
+from app.blueprints.login.routes import blueprint_login
 
 application.register_blueprint(main)
 application.register_blueprint(logic)

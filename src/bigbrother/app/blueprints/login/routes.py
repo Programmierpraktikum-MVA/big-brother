@@ -27,11 +27,11 @@ import cv2.misc
 # GUI and frontend libraries
 from app import socketio, login_manager, ws
 from app.user import BigBrotherUser
-from app.login.forms import SignInForm, CameraForm
+from app.blueprints.login.forms import SignInForm, CameraForm
 
 # Tells python where to search for modules
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "FaceRecognition"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "Logik"))
+sys.path.append(os.path.join(os.path.dirname(__file__),"..", "..", "..", "..", "FaceRecognition"))
+sys.path.append(os.path.join(os.path.dirname(__file__),"..", "..", "..", "..", "Logik"))
 import FaceDetection
 import Face_Recognition.FaceReco_class as LogikFaceRec
 

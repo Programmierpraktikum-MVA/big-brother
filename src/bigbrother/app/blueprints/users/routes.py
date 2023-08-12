@@ -28,7 +28,7 @@ import cv2.misc
 # GUI and frontend libraries
 from app import application, socketio, ws
 from app.user import BigBrotherUser
-from app.users.forms import SignInForm, CameraForm, SignUpForm
+from app.blueprints.users.forms import SignInForm, CameraForm, SignUpForm
 
 # ML libraries
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "FaceRecognition"))
