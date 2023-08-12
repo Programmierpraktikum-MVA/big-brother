@@ -9,6 +9,7 @@ import random
 from sys import stdout
 import sys
 import click
+import flask
 
 sys.path.append(os.path.join(os.path.dirname(__file__),".."))
 from flask import Flask, Response, render_template, request, session, make_response
@@ -42,7 +43,7 @@ import Gesture_Recognition.GestureReco_class as GestureRec
 from flask import render_template, flash, redirect, url_for
 
 #kim: kommt bald weg
-from app.forms import LoginForm, CreateForm, LoginCameraForm
+from app.forms import LoginForm, CreateForm, LoginCameraForm, EduVidForm
 #kim: neuer import
 from app.forms import SignUpForm, SignInForm, CameraForm, VideoUploadForm
 
@@ -81,6 +82,7 @@ application.config['SECRET_KEY'] = 'secret!'
 application.config['DEBUG'] = True
 application.config['UPLOAD_FOLDER'] = application.instance_path
 application.config['LOCALDEBUG'] = None
+application.config['TMP_VIDEO_FOLDER'] = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')), 'eduVid', 'tmp')
 
 login_manager = flask_login.LoginManager()
 login_manager.init_app(application)
@@ -96,6 +98,31 @@ else:
 socketio = SocketIO(application)
 
 #camera = Camera()
+
+def formatSeconds(seconds):
+    if not isinstance(seconds, (int, float)) or seconds < 0:
+        return 'Invalid input'
+
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    remaining_seconds = int(seconds % 60)
+
+    formatted_time_parts = []
+
+    if hours > 0:
+        formatted_time_parts.append(f"{hours}h")
+
+    if minutes > 0:
+        formatted_time_parts.append(f"{minutes}m")
+
+    if remaining_seconds > 0:
+        formatted_time_parts.append(f"{remaining_seconds}s")
+
+    return "".join(formatted_time_parts)
+
+
+application.jinja_env.globals.update(formatSeconds=formatSeconds)
+
 
 @application.route("/logout")
 @flask_login.login_required
@@ -218,18 +245,49 @@ def gestureReco():
 
     return render_template("rejection.html", rejectionDict=rejectionDict)
 
-@application.route("/eduVid", methods=['GET','POST'])
+
+@application.route('/videos/<filename>')
+def serve_video(filename):
+    return flask.send_from_directory(application.config['TMP_VIDEO_FOLDER'], filename)
+
+
+@application.route("/eduVid", methods=['GET', 'POST'])
 @flask_login.login_required
 def eduVid():
-    form = VideoUploadForm(request.form)
+
+    form = EduVidForm(request.form)
+
     if request.method == 'POST':
-        if form.validate_on_submit():
-            video = form.video.data
-            
-            #TODO: EduVid Implementation
-            
-            
-        return 'Das Video wurde erfolgreich hochgeladen.'  
+        name = request.form.get('eduName')
+        video = request.files.get('eduVid')
+
+        if not name:
+            return render_template("eduVid.html", form=form)
+        if not video:
+            return render_template("eduVid.html", form=form)
+
+        file_path = os.path.join(application.config['TMP_VIDEO_FOLDER'], video.filename)
+        video.save(file_path)
+
+        video_url = url_for('serve_video', filename=video.filename)
+
+        video_info = {
+            "title": name,
+            "url": video_url,
+            "time_stamps": [
+                {"Intro": 1.0},
+                {"Concept": 2.0},
+                {"Conclusion": 2.0},
+                {"Conclusion": 2.0},
+                {"Conclusion": 2.0},
+                {"Conclusion": 2.0},
+                {"Conclusion": 2.0},
+                {"Conclusion": 2.0},
+                {"Conclusion": 2.0}
+            ]
+        }
+
+        return render_template("eduVidPlayer.html", video_info=video_info)
     return render_template("eduVid.html", form=form)
 
 @application.route("/userpage")
