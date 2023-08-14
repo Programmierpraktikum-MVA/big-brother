@@ -27,7 +27,7 @@ import cv2.misc
 # GUI and frontend libraries
 from app import socketio, login_manager, ws
 from app.user import BigBrotherUser
-from app.blueprints.login.forms import SignInForm, CameraForm
+from app.blueprints.login.forms import LoginForm, CameraLoginForm
 
 # Tells python where to search for modules
 sys.path.append(os.path.join(os.path.dirname(__file__),"..", "..", "..", "..", "FaceRecognition"))
@@ -55,7 +55,7 @@ def loginstep():
 # TODO: Restructure to correct the abstraction levels.
 @blueprint_login.route("/login", methods=["GET", "POST"])
 def login():
-    form = SignInForm()
+    form = LoginForm()
 
     rejectionDict = {
         "reason": "Unknown",
@@ -80,7 +80,7 @@ def login():
 
             if storage is None or not storage.content_type.startswith("image/"):
                 rejectionDict["reason"] = "Image Not uploaded!"
-                return render_template("rejection.html", rejectionDict=rejectionDict, title="Sign In", form=form)
+                return render_template("rejection.html", rejectionDict=rejectionDict, title="Login", form=form)
 
             # Save Picture
             cookie = request.cookies.get("session_uuid")
@@ -101,14 +101,13 @@ def login():
             else:
                 return render_template("rejection.html",
                                        rejectionDict=rejectionDict,
-                                       title="Sign In",
+                                       title="Login",
                                        form=form)
         else:
             rejectionDict["reason"] = "'{}' not found!".format(user["username"])
             return render_template("rejection.html", rejectionDict=rejectionDict,
-                                   title="Sign In", form=form)
-
-    return render_template("login.html", title="Sign In", form=form)
+                                   title="Login", form=form)
+    return render_template("login.html", title="Login", form=form)
 
 
 @socketio.on("start_transfer_login", namespace="/webcamJS")
@@ -206,7 +205,7 @@ def test_message(input_):
 
 @blueprint_login.route("/logincamera", methods=["GET", "POST"])
 def logincamera():
-    form = CameraForm()
+    form = CameraLoginForm()
     rejectionDict = {
         "reason": "Unknown",
         "redirect": "login",
@@ -223,7 +222,7 @@ def logincamera():
         if not user_uuid:
             print("'{}' not found!".format(form.name.data), file=sys.stdout)
             rejectionDict["reason"] = "'{}' not found!".format(form.name.data)
-            return render_template("rejection.html", rejectionDict=rejectionDict, title="Sign In", form=form)
+            return render_template("rejection.html", rejectionDict=rejectionDict, title="Login", form=form)
 
         bbUser = None
 
@@ -252,7 +251,6 @@ def logincamera():
 
 @blueprint_login.route("/verifypicture", methods=["GET", "POST"])
 def verifyPicture():
-
     if request.method == "GET":
         if "username" not in request.args:
             rejectionDict = {
@@ -268,7 +266,7 @@ def verifyPicture():
             "username": username
         }
         return render_template("validationauthenticated.html", user=user_data)
-    elif request.method == "POST":
+    if request.method == "POST":
         data = request.get_json()
         if ("username" not in data) or ("image" not in data):
             return {"redirect": "/rejection"}

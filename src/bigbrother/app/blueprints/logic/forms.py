@@ -5,17 +5,17 @@ from flask_wtf.file import FileAllowed, FileField, FileRequired
 
 
 class VideoUploadForm(FlaskForm):
-    name = TextField('Name:', validators=[DataRequired()])
+    name = TextField("Name:", validators=[DataRequired()])
     video = FileField(
-        'Video:',
+        "Video:",
         validators=[
             FileRequired(),
-            FileAllowed(['mp4'], 'MP4 Videos only!')
+            FileAllowed(["mp4"])
         ]
     )
-    submit = SubmitField('Upload')
+    submit = SubmitField("Upload")
 
-
+# TODO: Take a look at the usage of this form
 class CameraForm(FlaskForm):
-    name = TextField('Name:', validators=[DataRequired()])
-    submit = SubmitField('Sign In')
+    name = TextField("Name:", validators=[DataRequired()])
+    submit = SubmitField("Login")

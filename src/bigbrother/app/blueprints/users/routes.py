@@ -41,6 +41,8 @@ import FaceDetection
 users = Blueprint("users", __name__)
 
 
+# TODO: There isn't really any good reason why the form is in here!
+# Restructure the project to get this out.
 @users.route("/logout")
 @login_required
 def logout():
@@ -49,6 +51,8 @@ def logout():
     return render_template("index.html", title="Home", form=form)
 
 
+# TODO: There isn't really any good reason why the form is in here!
+# Restructure the project to get this out.
 @users.route("/deleteuser")
 @login_required
 def deleteuser():
@@ -59,6 +63,8 @@ def deleteuser():
     return render_template("index.html", title="Home", form=form)
 
 
+# TODO: There isn't really any good reason why the form is in here!
+# Restructure the project to get this out.
 @users.route("/rejection")
 def rejection():
     form = CameraForm()
@@ -71,6 +77,8 @@ def rejection():
                            title="Reject", form=form)
 
 
+# TODO: There isn't really any good reason why the form is in here!
+# Restructure the project to get this out.
 @users.route("/validationsignup")
 def validationsignup():
     form = CameraForm()
@@ -100,7 +108,6 @@ def create():
     form = SignUpForm()
 
     if form.validate_on_submit():
-        print("hello", file=sys.stdout)
         rejectionDict = {
             "reason": "Unknown",
             "redirect": "create",
@@ -114,70 +121,59 @@ def create():
         }
         user_uuid = None
 
-        if not ws.DB.getUser(user["username"]):
-            pictures = [
-                user["pic1"],
-                user["pic2"],
-                user["pic3"],
-            ]
+        pictures = [
+            user["pic1"],
+            user["pic2"],
+            user["pic3"],
+        ]
 
-            user_uuid = ws.DB.register_user(user["username"], None)
-            image_index = 0
-            encodings_saved = False
-            for storage in pictures:
-                image_index += 1
-                if (storage is None) or (not storage.content_type.startswith("image/")):
-                    rejectionDict["reason"] = f"Image {image_index} not provided"
-                    ws.DB.deleteUserWithId(user_uuid)
-                    return render_template("rejection.html",
-                                           rejectionDict=rejectionDict,
-                                           title="Reject", form=form)
+        user_uuid = ws.DB.register_user(user["username"], None)
+        image_index = 0
+        encodings_saved = False
+        for storage in pictures:
+            image_index += 1
+            # TODO: This should be removable. Ask egain!
+            if (storage is None) or (not storage.content_type.startswith("image/")):
+                rejectionDict["reason"] = f"Image {image_index} not provided"
+                ws.DB.deleteUserWithId(user_uuid)
+                return render_template("rejection.html",
+                                       rejectionDict=rejectionDict,
+                                       title="Reject", form=form)
 
-                im_bytes = storage.stream.read()
-                image = Image.open(io.BytesIO(im_bytes))
-                array = np.array(image)
-                if not encodings_saved:
-                    try:
-                        # TODO: Check for errors later
-                        img = cv2.cvtColor(array, cv2.COLOR_BGR2RGB)
-                        encodings = face_recognition.face_encodings(img)
+            im_bytes = storage.stream.read()
+            image = Image.open(io.BytesIO(im_bytes))
+            array = np.array(image)
+            if not encodings_saved:
+                try:
+                    # TODO: Check for errors later
+                    img = cv2.cvtColor(array, cv2.COLOR_BGR2RGB)
+                    encodings = face_recognition.face_encodings(img)
 
-                        ws.DB.update_user_enc(user_uuid, encodings[0])
-                        encodings_saved = True
-                    except:
-                        # TODO: What exception does this cover? Specify the
-                        # exception and handle it properly!
-                        print("Error while calculating encodings")
-                image.close()
-                storage.close()
-                
-                # TODO: Avoid magic numbers: (98, 116)
-                pic_resized = cv2.resize(
-                    array,
-                    dsize=(98, 116),
-                    interpolation=cv2.INTER_CUBIC
-                )
-                pic_uuid = ws.DB.insertTrainingPicture(
-                    np.asarray(pic_resized, dtype=np.float64),
-                    user_uuid
-                )
-
-            ws.BigBrotherUserList.append(
-                BigBrotherUser(user_uuid, user["username"], ws.DB)
+                    ws.DB.update_user_enc(user_uuid, encodings[0])
+                    encodings_saved = True
+                except:
+                    # TODO: What exception does this cover? Specify the
+                    # exception and handle it properly!
+                    print("Error while calculating encodings")
+            image.close()
+            storage.close()
+            
+            # TODO: Avoid magic numbers: (98, 116)
+            pic_resized = cv2.resize(
+                array,
+                dsize=(98, 116),
+                interpolation=cv2.INTER_CUBIC
             )
-        else:
-            print("avail")
-            rejectionDict["reason"] = "Username '{}' is not available!".format(user["username"])
-            return render_template("rejection.html",
-                                   rejectionDict=rejectionDict,
-                                   title="Reject", form=form)
+            pic_uuid = ws.DB.insertTrainingPicture(
+                np.asarray(pic_resized, dtype=np.float64),
+                user_uuid
+            )
+
+        ws.BigBrotherUserList.append(
+            BigBrotherUser(user_uuid, user["username"], ws.DB)
+        )
 
         return render_template("validationsignup.html", name=user["username"])
-    else:
-        flash("Error: All Fields are Required")
-
-    # TODO: Implement field is required message below the fields in case
-    # the user didn't enter any values in the field.
 
     return render_template("create.html", form=form)
 
@@ -197,24 +193,14 @@ def createcamera():
     form = CameraForm()
 
     ws.createPictures = []
-    rejectionDict = {
-        "reason": "Unknown",
-        "redirect": "login",
-        "redirectPretty": "Back to registration",
-    }
-
-    # TODO: Use validate_on_submit() instead.
-    if request.method == "POST" and form.validate():
+    if form.validate_on_submit():
         flash("Thanks for signing up")
 
         global user
-        username = form.name.data
-        user_uuid = ws.DB.getUser(username)
-        if user_uuid:
-            rejectionDict["reason"] = "The username '{}' already exists!".format(form.name.data)
-            return render_template("rejection.html", rejectionDict=rejectionDict, title="Sign In", form=form)
+        user = form.name.data
 
-        user = username
+        # TODO: The signup still needs to get implemented.
+
         return render_template("webcamCreate.html", title="Camera")
     return render_template("createcamera.html", title="Create an account", form=form)
 

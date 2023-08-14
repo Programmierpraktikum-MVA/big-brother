@@ -18,11 +18,31 @@
                     <fieldset class="form-group">
                         <div class="form-group">
                             {{ form.name.label(class="form-control-label") }}
-                            {{ form.name(class="form-control form-control-lg")}}
+
+                            {% if form.name.errors %}
+                                {{ form.name(class="form-control form-control-lg is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.name.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.name(class="form-control form-control-lg") }}
+                            {% endif %}
                         </div>
                         <div class="form-group">
                             {{ form.pic.label(class="form-control-label") }}
-                            {{ form.pic(class="form-control form-control-lg") }}
+
+                            {% if form.pic.errors %}
+                                {{ form.pic(class="form-control form-control-lg is-invalid") }}
+                                <div class="invalid-feedback">
+                                    {% for error in form.pic.errors %}
+                                        <span>{{ error }}</span>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                {{ form.pic(class="form-control form-control-lg") }}
+                            {% endif %}
                         </div>
                     </fieldset>
                     <div class="form-group">

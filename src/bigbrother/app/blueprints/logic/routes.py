@@ -71,7 +71,6 @@ def eduVid():
     if form.validate_on_submit():
         name = form.name.data
         video = form.video.data
-        print(f"Has been validated. Name was '{name}'")
 
         # deletes every video file in tmp folder
         for vid_file in os.listdir(application.config["TMP_VIDEO_FOLDER"]):
