@@ -27,6 +27,7 @@ class EduVidForm(Form):
     eduName = TextField('Name', validators=[DataRequired()])
     eduVid = FileField(
         'Video',
+        # TODO: Should be deleted
         validators=[
             DataRequired(),
             FileAllowed(['.mp4'], 'MP4 Videos only!')

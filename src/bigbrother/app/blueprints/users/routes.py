@@ -126,7 +126,6 @@ def create():
             encodings_saved = False
             for storage in pictures:
                 image_index += 1
-                # TODO: Find out what the second condition is for!
                 if (storage is None) or (not storage.content_type.startswith("image/")):
                     rejectionDict["reason"] = f"Image {image_index} not provided"
                     ws.DB.deleteUserWithId(user_uuid)
@@ -139,6 +138,7 @@ def create():
                 array = np.array(image)
                 if not encodings_saved:
                     try:
+                        # TODO: Check for errors later
                         img = cv2.cvtColor(array, cv2.COLOR_BGR2RGB)
                         encodings = face_recognition.face_encodings(img)
 
@@ -216,22 +216,6 @@ def createcamera():
     return render_template("createcamera.html", title="Create an account", form=form)
 
 
-# TODO: Take a look at what this is about
-# TODO: If it is a test then you should export it
-# Socket Server side for login
-@socketio.on("connect", namespace="/webcamJS")
-def test_connect_web():
-    application.logger.info("client connected")
-
-
-# TODO: Take a look at what this is about
-# TODO: If it is a test then you should export it
-# Socket Server side for registration
-@socketio.on("connect", namespace="/createWithCamera")
-def test_connect_camera():
-    application.logger.info("client connected")
-
-
 @socketio.on("disconnect", namespace="/createWithCamera")
 def disconnected():
     cookie = request.cookies.get("session_uuid")
@@ -271,9 +255,6 @@ def create_with_image(input_):
     image_data = "data:image/jpeg;base64," + b
 
     # TODO: What do those magic number mean?
-    print("Check : {} < 5, {} < {}, {} > 50".format(
-          len(ws.createPictures), len(cutImg), len(img), len(cutImg)))
-    print(len(ws.createPictures) < 5 and len(cutImg) < len(img) and len(cutImg) > 50)
     if len(ws.createPictures) < 5 and len(cutImg) < len(img) and len(cutImg) > 50:
         ws.createPictures.append(cutImg)
         if len(ws.createPictures) >= 5:
@@ -289,7 +270,6 @@ def create_with_image(input_):
             cookie = request.cookies.get("session_uuid")
             ws.setAuthorizedAbort(cookie, True)
             emit("redirect", {"url": "/rejection"})
-
     emit("out-image-event", {"image_data": image_data}, namespace="/createWithCamera")
 
 
@@ -302,7 +282,8 @@ def queueImage_create(input):
 def webcamCommunication_create():
     emit("ack_transfer", {"foo": "bar"}, namespace="/createWithCamera")
     cookie = request.cookies.get("session_uuid")
-    while not ws.authorizedFlag or not ws.authorizedAbort:
+    # TODO: Check for infinite loop.
+    while (not ws.authorizedFlag) or (not ws.authorizedAbort):
         try:
             create_with_image(ws.WEBCAM_IMAGE_QUEUE_CREATE.get(block=True, timeout=5))
         except queue.Empty:

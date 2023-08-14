@@ -49,12 +49,8 @@ class websiteSystem:
         self.BigBrotherUserList = []
         userDict = self.DB.getUsers().items()
         userCount = len(userDict)
-        counter = 0
         for key, value in self.DB.getUsers().items():
             self.BigBrotherUserList.append(BigBrotherUser(key, value, self.DB))
-            counter += 1
-            if round((counter / userCount) * 100) % 25 == 0:
-                print("{}% finished...".format(round((counter / userCount) * 100)))
 
         # TODO: Reimplement this for more efficient and correct searching
         def get_user_by_id(self, user_uuid: uuid.UUID) -> typing.Optional[BigBrotherUser]:
@@ -123,13 +119,16 @@ class websiteSystem:
     def emptyQueue(self, session_uuid):
         self.WEBCAM_IMAGE_QUEUE_LOGIN_DICT[session_uuid] = queue.Queue()
 
+    # TODO: Doesn't really belong here. As far as I understand this class is
+    # made for user management regarding the DB and authenticating the 
+    # picture is for logic. This should be a part of the utility package
+    # in the login section.
     def authenticatePicture(self, user, pic, cookie):
         self.authorizedFlag = False
         self.setAuthorizedFlag(cookie, False)
 
         user_uuid = user["uuid"]
 
-        print(user)
         # TODO: This if statement is definately too long. Make it more consise
         # by extracting functions
         if user_uuid:

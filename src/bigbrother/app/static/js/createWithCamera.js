@@ -17,10 +17,6 @@ $(document).ready(function() {
 
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
-        // TODO: Can this be deleted?
-        //ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, 0, 0, 300, 150);
-        //ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight, 0, 0, 600, 300);
-        //ctx.drawImage(video, 0, 0, video.videoWidth, video.videoHeight);
         ctx.drawImage(video, 0, 0);
 
         let dataURL = canvas.toDataURL('image/jpeg');
@@ -32,7 +28,7 @@ $(document).ready(function() {
         socket.on('out-image-event',function(data){
             ready = true;
 
-            img.src = dataURL//data.image_data
+            img.src = dataURL
             photo.setAttribute('src', data.image_data);
 
             // TODO: Why is this commented out?

@@ -42,12 +42,6 @@ blueprint_login = Blueprint("blueprint_login", __name__)
 @login_manager.user_loader
 def load_user(user_id):
     # TODO: Make sure that the user_id is always from type uuid.UUID
-    print("loading user:", user_id, file=sys.stdout)
-
-    # TODO: How can this be a tuple?
-    if type(user_id) == tuple:
-        user_id = user_id[0]
-
     loaded_user = ws.get_user_by_id(user_id)
     loaded_user.sync()
     return loadedUser
@@ -69,9 +63,6 @@ def login():
         "redirectPretty": "Back to login",
     }
 
-    # TODO: That does this comment mean?
-    # We need to check if "Sign In" or "Open Camera" got pressed
-    # Activates when Sign in Button is pressed
     # TODO: You should use valitaion_on_submit! Same reason as before.
     if request.method == "POST" and form.validate():
         flash("Thanks for logging in")
@@ -108,7 +99,6 @@ def login():
                 flask_login.login_user(thisUser)
 
                 return render_template("validationauthenticated.html", user=user)
-
             else:
                 return render_template("rejection.html",
                                        rejectionDict=rejectionDict,
@@ -120,36 +110,6 @@ def login():
                                    title="Sign In", form=form)
 
     return render_template("login.html", title="Sign In", form=form)
-
-
-# TODO: What exactly does the input mean?
-@socketio.on("input_image_login", namespace="/webcamJS")
-def queueImage_login(input_):
-    cookie = request.cookies.get("session_uuid")
-    queueObj = ws.getQueue(cookie)
-    if queueObj.qsize() < 5:
-        queueObj.put(input_)
-
-    input_ = input_.split(",")[1]
-    image_data = input_  # Do your magical Image processing here!!
-
-    # user is global, use it with cv2_img for authentication
-    # OpenCV part decode and encode
-    img = None
-    try:
-        img = imread(io.BytesIO(base64.b64decode(image_data)))
-    except ValueError:
-        emit("ready", {"image_data": "bar"}, namespace="/webcamJS")
-        return
-    cv2_img = FaceDetection.make_rectangle(img)
-    cv2.imwrite("reconstructed_display.jpg", cv2_img)
-
-    retval, buffer = cv2.imencode(".jpg", cv2_img)
-    b = base64.b64encode(buffer)
-    b = b.decode()
-    image_data = "data:image/jpeg;base64," + b
-
-    emit("display_image", {"image_data": image_data}, namespace="/webcamJS")
 
 
 @socketio.on("start_transfer_login", namespace="/webcamJS")
@@ -217,6 +177,7 @@ def test_message(input_):
     user["isWorking"] = False
 
     cookie = request.cookies.get("session_uuid")
+    # TODO: Eliminate magic numbers
     if len(cutImg) < len(img) and len(cutImg) > 50:
         res = ws.authenticatePicture(user, np.asarray(cutImg), cookie)
         if res:
@@ -250,14 +211,10 @@ def logincamera():
     rejectionDict = {
         "reason": "Unknown",
         "redirect": "login",
-        "redirectPretty": "Zurück zur Anmeldung",
+        "redirectPretty": "Back to login",
     }
 
-    # TODO: Why do we need to check it? Is it GET vs POST? What if 
-    # form.validate() == false?
-
-    # We need to check if "Sign In" or "Open Camera" got pressed
-    # Activates when Sign in Button is pressed
+    # TODO: validate_on_submit()
     if request.method == "POST" and form.validate():
         flash("Thanks for logging in")
 
@@ -295,8 +252,6 @@ def logincamera():
     return render_template("logincamera.html", title="Login with Camera", form=form)
 
 
-# TODO: Why can't we verify the picture when the button in login is pressed?
-# Do we really need to have a route in order to do this? 
 @blueprint_login.route("/verifypicture", methods=["GET", "POST"])
 def verifyPicture():
 
@@ -315,11 +270,8 @@ def verifyPicture():
             "username": username
         }
         return render_template("validationauthenticated.html", user=user_data)
-
-    # POST request gets send from main.js in the sendSnapshot() function.
     elif request.method == "POST":
         data = request.get_json()
-        # json data needs to have the encoded image & username
         if ("username" not in data) or ("image" not in data):
             return {"redirect": "/rejection"}
 
@@ -347,19 +299,14 @@ def verifyPicture():
             logik = LogikFaceRec.FaceReco()
             (results, dists) = logik.photo_to_photo(user_enc, camera_img)
 
-            # if successfull login but page does not change !
             result = results[0]
             if not result:
                 return {"redirect": "/rejection"}
             else:
                 thisUser = BigBrotherUser(user_uuid, user["username"], ws.DB)
                 flask_login.login_user(thisUser)
-
                 user_data = {"username": username}
-
-                # back to base?
                 return {"redirect": "/verifypicture", "data": user_data}
         else:
             return {"redirect": "/rejection"}
-
     return {"redirect": "/rejection"}

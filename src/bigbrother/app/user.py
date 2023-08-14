@@ -16,22 +16,23 @@ class BigBrotherUser(UserMixin):
     This class keeps the information about the user.
     """
 
-    # TODO: The user shouldn't store data about the database.
-    # -> Discuss whether it really should be done.
     # TODO: Verify whether the uuids are really all from type uuid.UUID.
     def __init__(self, user_uuid: uuid.UUID, name: str, DB):
+        """
+        Exceptions:
+        TypeError -- Gets raised if the arguments are of the wrong type.
+        """
+        if type(user_uuid) == uuid.UUID:
+            raise TypeError
+
         self.uuid = user_uuid
         self.name = name
         self.DB = DB
 
-        # TODO: We should not allow it to be a tuple!
-        if type(user_uuid) == tuple:
-            self.uuid = user_uuid[0]
-
         self.trainingPictures = []
         """ logData: Used for logs. Stores past login dates as well as
         the picture IDs that are associated with those logins that came
-        from the user with the uuid: self.uuid"""
+        from the user with the uuid: self.uuid """
         self.logData = []
         self.trainingPicturesWebsiteFormat = []
 
