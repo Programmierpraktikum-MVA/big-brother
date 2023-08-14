@@ -25,6 +25,7 @@ from cv2RecogClass import cv2Recog
 
 import DatabaseManagement as DBM
 
+
 # TODO: Make this conform with the naming convention.
 class websiteSystem:
     def __init__(self):
@@ -48,7 +49,6 @@ class websiteSystem:
         # Keeps track of the users and their session keys
         self.BigBrotherUserList = []
         userDict = self.DB.getUsers().items()
-        userCount = len(userDict)
         for key, value in self.DB.getUsers().items():
             self.BigBrotherUserList.append(BigBrotherUser(key, value, self.DB))
 
@@ -69,7 +69,7 @@ class websiteSystem:
         """
         if type(user_uuid) != uuid.UUID:
             raise TypeError
-        
+
         # TODO: Implement a more efficient way of searching
         for user in self.BigBrotherUserList:
             if user.uuid == user_uuid:
@@ -120,7 +120,7 @@ class websiteSystem:
         self.WEBCAM_IMAGE_QUEUE_LOGIN_DICT[session_uuid] = queue.Queue()
 
     # TODO: Doesn't really belong here. As far as I understand this class is
-    # made for user management regarding the DB and authenticating the 
+    # made for user management regarding the DB and authenticating the
     # picture is for logic. This should be a part of the utility package
     # in the login section.
     def authenticatePicture(self, user, pic, cookie):

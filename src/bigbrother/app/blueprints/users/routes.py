@@ -12,7 +12,6 @@ import uuid
 # Flask
 from flask import render_template, request, flash, Blueprint
 from flask_socketio import emit
-import flask_login
 from flask_login import login_required, logout_user
 
 # Math
@@ -145,14 +144,14 @@ def create():
                     print("Error while calculating encodings")
             image.close()
             storage.close()
-            
+
             # TODO: Avoid magic numbers: (98, 116)
             pic_resized = cv2.resize(
                 array,
                 dsize=(98, 116),
                 interpolation=cv2.INTER_CUBIC
             )
-            pic_uuid = ws.DB.insertTrainingPicture(
+            ws.DB.insertTrainingPicture(
                 np.asarray(pic_resized, dtype=np.float64),
                 user_uuid
             )

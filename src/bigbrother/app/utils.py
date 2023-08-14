@@ -18,5 +18,3 @@ def formatSeconds(seconds):
         formatted_time_parts.append(f"{remaining_seconds}s")
 
     return "".join(formatted_time_parts)
-
-

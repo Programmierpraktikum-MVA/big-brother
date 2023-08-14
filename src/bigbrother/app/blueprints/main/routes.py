@@ -32,7 +32,7 @@ def algorithms():
 def index():
     # TODO: What is this condition used for. Why don't we directly send the POST
     # request to the route of the logincamera function?
-    # TODO: This should probably be avoided, because it would be best for the 
+    # TODO: This should probably be avoided, because it would be best for the
     # home route not to contain anything related to the login if possible
     if request.method == "POST":
         return logincamera()

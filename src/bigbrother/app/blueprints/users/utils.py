@@ -12,7 +12,7 @@ def register_user(username, pictures):
     if not ws.DB.getUser(username):
         user_uuid = ws.DB.register_user(username)
         for pic in pictures:
-            pic_uuid = ws.DB.insertTrainingPicture(
+            ws.DB.insertTrainingPicture(
                 np.asarray(pic, dtype=np.float64), user_uuid
             )
     else:

@@ -2,7 +2,7 @@ import os
 import sys
 
 
-from flask import (render_template, request, Blueprint, url_for, 
+from flask import (render_template, request, Blueprint, url_for,
                    send_from_directory)
 import flask_login
 

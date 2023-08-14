@@ -30,8 +30,8 @@ from app.user import BigBrotherUser
 from app.blueprints.login.forms import LoginForm, CameraLoginForm
 
 # Tells python where to search for modules
-sys.path.append(os.path.join(os.path.dirname(__file__),"..", "..", "..", "..", "FaceRecognition"))
-sys.path.append(os.path.join(os.path.dirname(__file__),"..", "..", "..", "..", "Logik"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "FaceRecognition"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "Logik"))
 import FaceDetection
 import Face_Recognition.FaceReco_class as LogikFaceRec
 
@@ -51,6 +51,7 @@ def load_user(user_id):
 def loginstep():
     flask_login.login_user(user["bbUser"])
     return render_template("validationauthenticated.html")
+
 
 # TODO: Restructure to correct the abstraction levels.
 @blueprint_login.route("/login", methods=["GET", "POST"])
@@ -147,8 +148,8 @@ def test_message(input_):
         # TODO: Why is anything emmited if the socketio-decorator is turned off?
         emit("redirect", {"url": "/rejection"})
 
-    # CAUTION: test_message is called multiple times from the client 
-    # (for every image). Figure out how many pics are needed and then 
+    # CAUTION: test_message is called multiple times from the client
+    # (for every image). Figure out how many pics are needed and then
     # close socket
     input_ = input_.split(",")[1]
     image_data = input_  # Do your magical Image processing here!!
