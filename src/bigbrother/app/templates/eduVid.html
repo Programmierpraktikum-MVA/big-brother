@@ -14,27 +14,18 @@
             <h3 class="card-title">Video Upload</h3>
             <form  action="" method="post" role="form" enctype='multipart/form-data'>
                 {{ form.csrf_token }}
-                <div style="margin-left: 0%; margin-right: 0%">
-
+                <fieldset class="form-group">
                     <div class="form-group">
-                        <label for="eduName">Video Name</label>
-                        <div class="">
-                            <input type="text" class="form-control" id="eduName" name="eduName" placeholder="Name">
-                        </div>
+                        {{ form.name.label(class="form-control-label") }}
+                        {{ form.name(class="form-control form-control-lg") }}
                     </div>
                     <div class="form-group">
-                        <label for="eduVid">Video</label>
-                        <div class="">
-                            <input type="file" class="form-control" id="eduVid" name="eduVid" accept="video/mp4"/>
-                        </div>
+                        {{ form.video.label(class="form-control-label") }}
+                        {{ form.video(class="form-control form-control-lg") }}
                     </div>
-
-                    <div class="form-group">
-                        <div class="">
-                            <button id="button" type="submit" class="btn btn-success">Upload</button>
-                        </div>
-                    </div>
-
+                </fieldset>
+                <div class="form-group">
+                    {{ form.submit(class="btn btn-outline-info") }}
                 </div>
             </form>
         </div>

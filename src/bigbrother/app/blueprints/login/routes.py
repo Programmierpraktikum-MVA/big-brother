@@ -44,7 +44,7 @@ def load_user(user_id):
     # TODO: Make sure that the user_id is always from type uuid.UUID
     loaded_user = ws.get_user_by_id(user_id)
     loaded_user.sync()
-    return loadedUser
+    return loaded_user
 
 
 @blueprint_login.route("/loginstep")
@@ -55,7 +55,7 @@ def loginstep():
 # TODO: Restructure to correct the abstraction levels.
 @blueprint_login.route("/login", methods=["GET", "POST"])
 def login():
-    form = SignInForm(request.form)
+    form = SignInForm()
 
     rejectionDict = {
         "reason": "Unknown",
@@ -63,13 +63,12 @@ def login():
         "redirectPretty": "Back to login",
     }
 
-    # TODO: You should use valitaion_on_submit! Same reason as before.
-    if request.method == "POST" and form.validate():
+    if form.validate_on_submit():
         flash("Thanks for logging in")
 
         user = {
             "username": form.name.data,
-            "pic": request.files.get("pic", None)
+            "pic": form.pic.data
         }
 
         # Verify user
@@ -207,15 +206,14 @@ def test_message(input_):
 
 @blueprint_login.route("/logincamera", methods=["GET", "POST"])
 def logincamera():
-    form = CameraForm(request.form)
+    form = CameraForm()
     rejectionDict = {
         "reason": "Unknown",
         "redirect": "login",
         "redirectPretty": "Back to login",
     }
 
-    # TODO: validate_on_submit()
-    if request.method == "POST" and form.validate():
+    if form.validate_on_submit():
         flash("Thanks for logging in")
 
         # Fetch Username

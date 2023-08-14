@@ -9,8 +9,10 @@
 {% endblock navbar %}
 
 {% block content %}
-    <!-- User ist ein Admin:-->
+    <!-- User is an admin -->
     {%if current_user.admin%}
+        <!-- TODO: This form still needs to be worked on. This doesn't really work
+                   with the new setup. -->
         <form>
             <div class="dropdown">
               <button class="dropbtn">Select A User to Display</button>

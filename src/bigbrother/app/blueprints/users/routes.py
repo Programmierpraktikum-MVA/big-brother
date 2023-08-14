@@ -44,7 +44,7 @@ users = Blueprint("users", __name__)
 @users.route("/logout")
 @login_required
 def logout():
-    form = SignInForm(request.form)
+    form = SignInForm()
     logout_user()
     return render_template("index.html", title="Home", form=form)
 
@@ -52,7 +52,7 @@ def logout():
 @users.route("/deleteuser")
 @login_required
 def deleteuser():
-    form = SignInForm(request.form)
+    form = SignInForm()
     logout_user()
     user_uuid = uuid.UUID(request.args.get("usr", default=1, type=str))
     ws.DB.deleteUserWithId(user_uuid)
@@ -86,8 +86,10 @@ def validationsignup():
 
 @users.route("/userpage")
 def userpage():
-    display_uuid = uuid.UUID(request.args.get("usr", default=1, type=str))
-    display_user = ws.get_user_by_id(display_uuid)
+    display_uuid = request.args.get("usr", default=None, type=str)
+    display_user = None
+    if display_uuid:
+        display_user = ws.get_user_by_id(display_uuid)
     return render_template("userpage.html",
                            BigBrotherUserList=ws.BigBrotherUserList,
                            displayUser=display_user)
@@ -95,12 +97,10 @@ def userpage():
 
 @users.route("/create", methods=["GET", "POST"])
 def create():
-    form = SignUpForm(request.form)
+    form = SignUpForm()
 
-    # TODO: Validate_on_submit should be should be used instead!
-    # Refer to this article: 
-    # https://stackoverflow.com/questions/43002323/difference-between-form-validate-on-submit-and-form-validate
-    if request.method == "POST" and form.validate():
+    if form.validate_on_submit():
+        print("hello", file=sys.stdout)
         rejectionDict = {
             "reason": "Unknown",
             "redirect": "create",
@@ -108,9 +108,9 @@ def create():
         }
         user = {
             "username": form.name.data,
-            "pic1": request.files.get("pic1", None),
-            "pic2": request.files.get("pic2", None),
-            "pic3": request.files.get("pic3", None),
+            "pic1": form.pic1.data,
+            "pic2": form.pic2.data,
+            "pic3": form.pic3.data
         }
         user_uuid = None
 
@@ -166,12 +166,15 @@ def create():
                 BigBrotherUser(user_uuid, user["username"], ws.DB)
             )
         else:
+            print("avail")
             rejectionDict["reason"] = "Username '{}' is not available!".format(user["username"])
             return render_template("rejection.html",
                                    rejectionDict=rejectionDict,
                                    title="Reject", form=form)
 
         return render_template("validationsignup.html", name=user["username"])
+    else:
+        flash("Error: All Fields are Required")
 
     # TODO: Implement field is required message below the fields in case
     # the user didn't enter any values in the field.
@@ -191,7 +194,7 @@ def webcamCreate():
 
 @users.route("/createcamera", methods=["GET", "POST"])
 def createcamera():
-    form = CameraForm(request.form)
+    form = CameraForm()
 
     ws.createPictures = []
     rejectionDict = {

@@ -13,7 +13,7 @@ import cv2.misc
 # Tells python where to search for modules
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "Logik"))
 
-from app.blueprints.logic.forms import VideoUploadForm, CameraForm, EduVidForm
+from app.blueprints.logic.forms import VideoUploadForm, CameraForm
 from app import application
 
 import Gesture_Recognition.GestureReco_class as GestureRec
@@ -24,7 +24,7 @@ logic = Blueprint("logic", __name__)
 
 @logic.route("/gestureReco", methods=["GET", "POST"])
 def gestureReco():
-    form = CameraForm(request.form)
+    form = CameraForm()
 
     rejectionDict = {
         "reason": "Unknown",
@@ -35,7 +35,7 @@ def gestureReco():
     if request.method == "GET":
         return render_template("gestureReco.html", form=form)
 
-    if request.method == "POST" and form.validate():
+    if form.validate_on_submit():
         capture = cv2.VideoCapture(0)
         gesture = GestureRec.GestureReco()
 
@@ -66,15 +66,12 @@ def serve_video(filename):
 @logic.route("/eduVid", methods=["GET", "POST"])
 @flask_login.login_required
 def eduVid():
-    form = EduVidForm(request.form)
+    form = VideoUploadForm()
 
-    if request.method == "POST":
-        name = request.form.get("eduName")
-        video = request.files.get("eduVid")
-
-        # TODO: eliminate this case with form validation
-        if (not name) or (not video):
-            return render_template("eduVid.html", form=form)
+    if form.validate_on_submit():
+        name = form.name.data
+        video = form.video.data
+        print(f"Has been validated. Name was '{name}'")
 
         # deletes every video file in tmp folder
         for vid_file in os.listdir(application.config["TMP_VIDEO_FOLDER"]):
@@ -107,7 +104,6 @@ def eduVid():
                 {"EOF": 7777.0}
             ]
         }
-
         return render_template("eduVidPlayer.html", video_info=video_info)
 
     return render_template("eduVid.html", form=form)

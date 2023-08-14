@@ -22,7 +22,7 @@ class BigBrotherUser(UserMixin):
         Exceptions:
         TypeError -- Gets raised if the arguments are of the wrong type.
         """
-        if type(user_uuid) == uuid.UUID:
+        if type(user_uuid) != uuid.UUID:
             raise TypeError
 
         self.uuid = user_uuid

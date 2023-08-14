@@ -52,29 +52,29 @@ class websiteSystem:
         for key, value in self.DB.getUsers().items():
             self.BigBrotherUserList.append(BigBrotherUser(key, value, self.DB))
 
-        # TODO: Reimplement this for more efficient and correct searching
-        def get_user_by_id(self, user_uuid: uuid.UUID) -> typing.Optional[BigBrotherUser]:
-            """
-            Searches and returns the a user with a certain id.
+    # TODO: Reimplement this for more efficient and correct searching
+    def get_user_by_id(self, user_uuid: uuid.UUID) -> typing.Optional[BigBrotherUser]:
+        """
+        Searches and returns the a user with a certain id.
 
-            Arguments:
-            user_uuid -- The ID of the user that you are trying to search.
+        Arguments:
+        user_uuid -- The ID of the user that you are trying to search.
 
-            Return:
-            Returns the user with the give ID. Returns None if the user
-            with the ID doesn't exist.
+        Return:
+        Returns the user with the give ID. Returns None if the user
+        with the ID doesn't exist.
 
-            Exception:
-            TypeError -- Gets risen if the type of the arguments is incorrect.
-            """
-            if type(user_uuid) != uuid.UUID:
-                raise TypeError
-            
-            # TODO: Implement a more efficient way of searching
-            for user in self.BigBrotherUserList:
-                if user.uuid == user_uuid:
-                    return user
-            return None
+        Exception:
+        TypeError -- Gets risen if the type of the arguments is incorrect.
+        """
+        if type(user_uuid) != uuid.UUID:
+            raise TypeError
+        
+        # TODO: Implement a more efficient way of searching
+        for user in self.BigBrotherUserList:
+            if user.uuid == user_uuid:
+                return user
+        return None
 
     def setAuthorizedAbort(self, session_uuid, value):
         self.authorizedAbortDict[session_uuid] = value
