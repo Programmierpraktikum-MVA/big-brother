@@ -15,7 +15,6 @@ class VideoUploadForm(FlaskForm):
     )
     submit = SubmitField("Upload")
 
-# TODO: Take a look at the usage of this form
 class CameraForm(FlaskForm):
     name = TextField("Name:", validators=[DataRequired()])
     submit = SubmitField("Login")

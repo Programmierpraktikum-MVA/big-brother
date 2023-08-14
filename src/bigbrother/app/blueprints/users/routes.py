@@ -30,7 +30,7 @@ import cv2.misc
 # GUI and frontend libraries
 from app import application, socketio, ws
 from app.user import BigBrotherUser
-from app.blueprints.users.forms import SignInForm, CameraForm, SignUpForm
+from app.blueprints.users.forms import CameraSignUpForm, SignUpForm
 from app.blueprints.users.utils import register_user
 
 # ML libraries
@@ -41,55 +41,43 @@ import FaceDetection
 users = Blueprint("users", __name__)
 
 
-# TODO: There isn't really any good reason why the form is in here!
-# Restructure the project to get this out.
 @users.route("/logout")
 @login_required
 def logout():
-    form = SignInForm()
     logout_user()
-    return render_template("index.html", title="Home", form=form)
+    return render_template("index.html", title="Home")
 
 
-# TODO: There isn't really any good reason why the form is in here!
-# Restructure the project to get this out.
 @users.route("/deleteuser")
 @login_required
 def deleteuser():
-    form = SignInForm()
     logout_user()
     user_uuid = uuid.UUID(request.args.get("usr", default=1, type=str))
     ws.DB.deleteUserWithId(user_uuid)
-    return render_template("index.html", title="Home", form=form)
+    return render_template("index.html", title="Home")
 
 
-# TODO: There isn't really any good reason why the form is in here!
-# Restructure the project to get this out.
 @users.route("/rejection")
 def rejection():
-    form = CameraForm()
     rejectionDict = {
         "reason": "Unknown",
         "redirect": "create",
         "redirectPretty": "Back to registration",
     }
     return render_template("rejection.html", rejectionDict=rejectionDict,
-                           title="Reject", form=form)
+                           title="Reject")
 
 
-# TODO: There isn't really any good reason why the form is in here!
-# Restructure the project to get this out.
+# TODO: What is this used for?
 @users.route("/validationsignup")
 def validationsignup():
-    form = CameraForm()
     user_uuid = ws.DB.getUser(user)
-
     if user_uuid:
         ws.BigBrotherUserList.append(BigBrotherUser(user_uuid, user, ws.DB))
         return render_template("validationsignup.html", name=user)
 
     return render_template("index.html",
-                           BigBrotherUserList=ws.BigBrotherUserList, form=form)
+                           BigBrotherUserList=ws.BigBrotherUserList)
 
 
 @users.route("/userpage")
@@ -190,7 +178,7 @@ def webcamCreate():
 
 @users.route("/createcamera", methods=["GET", "POST"])
 def createcamera():
-    form = CameraForm()
+    form = CameraSignUpForm()
 
     ws.createPictures = []
     if form.validate_on_submit():

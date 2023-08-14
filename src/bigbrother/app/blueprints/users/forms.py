@@ -25,13 +25,7 @@ class UsernameDoesNotExistsInDatabase(object):
             raise StopValidation(message)
 
 
-class SignInForm(FlaskForm):
-    name = TextField("Name:", validators=[DataRequired()])
-    pic = FileField("Picture:", validators=[DataRequired()])
-    submit = SubmitField("Sign In")
-
-
-class CameraForm(FlaskForm):
+class CameraSignUpForm(FlaskForm):
     name = TextField(
         "Name:", validators=[
             DataRequired(),
