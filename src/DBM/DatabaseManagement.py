@@ -200,7 +200,7 @@ class BBDB:
                         "success_res_id": str(success_res_uuid),
                     }
                 })
-            return inserted_pic_uuid
+            return success_res_uuid
         except Exception:
             print("WARNING: Database Login Update!")
             return False
