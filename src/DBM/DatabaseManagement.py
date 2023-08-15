@@ -190,20 +190,20 @@ class BBDB:
         try:
             self._login_attempt.update_one(
                 {
-                    "user_id": str(user_id),
+                    "user_id": str(user_uuid),
                     "date": time
                 },
                 { 
                     "$set" : {
                         "login_suc": True,
                         "success_resp_type": 0,
-                        "inserted_pic_uuid": str(inserted_pic_uuid),
+                        "success_res_id": str(success_res_uuid),
                     }
                 })
             return inserted_pic_uuid
         except Exception:
             print("WARNING: Database Login Update!")
-            return False, False
+            return False
 
     def getLoginLogOfUser(self, user_uuid: uuid.UUID):
         # TODO: Write tests for this method
