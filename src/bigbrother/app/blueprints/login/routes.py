@@ -11,7 +11,6 @@ import uuid
 # Third party
 # Flask
 from flask import render_template, request, flash, Blueprint
-from flask_socketio import emit
 import flask_login
 
 import werkzeug
@@ -28,7 +27,7 @@ import cv2.misc
 
 # Own libraries
 # GUI and frontend libraries
-from app import socketio, login_manager, ws
+from app import login_manager, ws
 from app.user import BigBrotherUser
 from app.blueprints.login.forms import LoginForm, CameraLoginForm
 
