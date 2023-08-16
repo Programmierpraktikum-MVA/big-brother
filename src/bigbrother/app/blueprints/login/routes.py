@@ -94,7 +94,7 @@ def login():
         result = ws.authenticatePicture(user, np_image, cookie)
         if result:
             # TODO: The inserted picture has to be somehow documented
-            ws.DB.update_login(user_uuid, login_attempt_time, None)
+            ws.DB.update_login(user_uuid, login_attempt_time, result)
             flask_login.login_user(bb_user)
             return render_template("validationauthenticated.html")
         else:
