@@ -39,7 +39,7 @@ def gestureReco():
         capture = cv2.VideoCapture(0)
         gesture = GestureRecognizer()
 
-        while True:
+        while False:
             _, frame = capture.read()
             frame, className = gesture.recognize(frame)
             cv2.putText(frame, className, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
