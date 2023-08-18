@@ -31,10 +31,6 @@ from app.user import BigBrotherUser
 from app.blueprints.users.forms import CameraSignUpForm, SignUpForm
 from app.blueprints.users.utils import register_user
 
-# ML libraries
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "FaceRecognition"))
-import FaceDetection
-
 
 users = Blueprint("users", __name__)
 
@@ -167,4 +163,3 @@ def create():
 @users.route("/webcamJS", methods=["GET", "POST"])
 def webcamJS():
     return render_template("webcamJS.html", title="Camera")
-

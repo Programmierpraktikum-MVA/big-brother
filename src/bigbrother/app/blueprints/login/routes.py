@@ -32,7 +32,7 @@ from app.user import BigBrotherUser
 from app.blueprints.login.forms import LoginForm, CameraLoginForm
 
 # Tells python where to search for modules
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "FaceRecognition"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "face_recognition"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "Logik"))
 import FaceDetection
 import Face_Recognition.FaceReco_class as LogikFaceRec
