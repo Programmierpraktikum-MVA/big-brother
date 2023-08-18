@@ -1,20 +1,26 @@
 import os
 import sys
+import io
 
 
 from flask import (render_template, request, Blueprint, url_for,
                    send_from_directory)
 import flask_login
+from flask_socketio import emit
 
 import cv2
 import cv2.misc
+from PIL import Image
+import numpy as np
+import base64
+import urllib
 
 
 # Tells python where to search for modules
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "gesture_recognition"))
 
 from app.blueprints.logic.forms import VideoUploadForm
-from app import application
+from app import application, socketio
 
 from gesture_recognizer import GestureRecognizer
 
@@ -27,12 +33,30 @@ logic = Blueprint("logic", __name__)
 def gestureReco():
     return render_template("gestureReco.html")
 
-    #gesture = GestureRecognizer()
-    #_, frame = capture.read()
-    #frame, className = gesture.recognize(frame)
-    #cv2.putText(frame, className, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
-    # Show the final output
-    #cv2.imshow("Output", frame)
+
+@socketio.on("gesture_recognition", namespace="/gesture_recognition")
+def recognizing_gestures(data):
+    img_url = data["image"].split(",")
+    if len(img_url) < 2:
+        return
+    
+    response = urllib.request.urlopen(data["image"])
+    buffer = io.BytesIO()
+    buffer.write(response.file.read())
+    pil_img = Image.open(io.BytesIO(buffer.getvalue()))
+    buffer.close()
+    np_img = np.asarray(pil_img)
+
+    gesture = GestureRecognizer()
+    frame, className = gesture.recognize(np_img)
+    cv2.putText(frame, className, (10, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 0, 255), 2, cv2.LINE_AA)
+
+    pil_img = Image.fromarray(frame.astype('uint8'), 'RGB')
+    buffered = io.BytesIO()
+    pil_img.save(buffered, format="JPEG")
+    response_data_url = "data:image/jpeg;base64," + base64.b64encode(buffered.getvalue()).decode("utf-8")
+
+    emit("ack_gesture_recognition", {"image": response_data_url})
 
 
 @logic.route("/videos/<filename>")
