@@ -27,23 +27,9 @@ import DatabaseManagement as DBM
 
 
 # TODO: Make this conform with the naming convention.
+# TODO: Rename it as user management
 class websiteSystem:
     def __init__(self):
-        self.createPictures = []
-        # TODO: What are those flags for?
-        self.authorizedFlag = False
-        self.authorizedAbort = False
-
-        # TODO: What are those variables for?
-        self.emptypiccount = 0
-        self.WEBCAM_IMAGE_QUEUE_LOGIN = queue.Queue()
-        self.WEBCAM_IMAGE_QUEUE_CREATE = queue.Queue()
-
-        self.WEBCAM_IMAGE_QUEUE_LOGIN_DICT = {}
-        self.authorizedFlagDict = {}
-        self.authorizedAbortDict = {}
-        self.invalidStreamCount = {}
-
         self.DB = DBM.wire_DB()
 
         # Keeps track of the users and their session keys
@@ -76,57 +62,11 @@ class websiteSystem:
                 return user
         return None
 
-    def setAuthorizedAbort(self, session_uuid, value):
-        self.authorizedAbortDict[session_uuid] = value
-
-    def setAuthorizedFlag(self, session_uuid, value):
-        self.authorizedFlagDict[session_uuid] = value
-
-    def setinvalidStreamCount(self, session_uuid, value):
-        self.invalidStreamCount[session_uuid] = value
-
-    def getinvalidStreamCount(self, session_uuid):
-        if session_uuid not in self.invalidStreamCount.keys():
-            self.invalidStreamCount[session_uuid] = False
-        return self.invalidStreamCount[session_uuid]
-
-    def addinvalidStreamCount(self, session_uuid):
-        self.invalidStreamCount[session_uuid] = self.invalidStreamCount[session_uuid] + 1
-
-    def resetinvalidStreamCount(self, session_uuid):
-        self.invalidStreamCount[session_uuid] = 0
-
-    def checkinvalidStreamCount(self, session_uuid):
-        return self.invalidStreamCount[session_uuid] > 20
-
-    def getAuthorizedAbort(self, session_uuid):
-        if session_uuid not in self.authorizedAbortDict.keys():
-            self.authorizedAbortDict[session_uuid] = False
-        return self.authorizedAbortDict[session_uuid]
-
-    def getAuthorizedFlag(self, session_uuid):
-        if session_uuid not in self.authorizedFlagDict.keys():
-            self.authorizedFlagDict[session_uuid] = False
-        return self.authorizedFlagDict[session_uuid]
-
-    def getQueue(self, session_uuid):
-        if session_uuid in self.WEBCAM_IMAGE_QUEUE_LOGIN_DICT.keys():
-            return self.WEBCAM_IMAGE_QUEUE_LOGIN_DICT[session_uuid]
-        else:
-            self.WEBCAM_IMAGE_QUEUE_LOGIN_DICT[session_uuid] = queue.Queue()
-            return self.WEBCAM_IMAGE_QUEUE_LOGIN_DICT[session_uuid]
-
-    def emptyQueue(self, session_uuid):
-        self.WEBCAM_IMAGE_QUEUE_LOGIN_DICT[session_uuid] = queue.Queue()
-
     # TODO: Doesn't really belong here. As far as I understand this class is
     # made for user management regarding the DB and authenticating the
     # picture is for logic. This should be a part of the utility package
     # in the login section.
     def authenticatePicture(self, user, pic, cookie):
-        self.authorizedFlag = False
-        self.setAuthorizedFlag(cookie, False)
-
         user_uuid = user["uuid"]
 
         # TODO: This if statement is definately too long. Make it more consise
@@ -169,7 +109,7 @@ class websiteSystem:
             cv2Inst = cv2Recog()
 
             # TODO: The code below was commented out! WHY? Shouldn't we add training data?
-            # cv2Inst.train_add_faces(temp_ID, imgs_train, save_model=False)
+            cv2Inst.train_add_faces(temp_ID, imgs_train, save_model=False)
 
             # Authorize: check if the training pitures are the same person as the given login picture
             cv_result, dists = False, None
@@ -218,21 +158,11 @@ class websiteSystem:
                 print("User : '{}' recognised!".format(user["username"]), file=sys.stdout)
                 print("AlgoScore : {}".format(algoScore))
 
-                self.authorizedFlag = True
-                self.setAuthorizedFlag(cookie, True)
                 return self.DB.insertTrainingPicture(pic, user_uuid)
             else:
-                # TODO: Why is authorizedFlag set to false while the other one authorized flag
-                # is set to true?
-                self.authorizedFlag = False
-                self.setAuthorizedFlag(cookie, True)
-
                 print("User : '{}' not recognised!".format(user["username"]), file=sys.stdout)
                 print("AlgoScore : {}".format(algoScore))
-
                 return False
         else:
-            self.authorizedFlag = False
-            self.setAuthorizedFlag(cookie, False)
             print("'{}' not found!".format(user["username"]), file=sys.stdout)
             return False
