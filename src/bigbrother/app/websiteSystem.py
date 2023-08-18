@@ -67,102 +67,95 @@ class websiteSystem:
     # picture is for logic. This should be a part of the utility package
     # in the login section.
     def authenticatePicture(self, user, pic, cookie):
+        """
+        We assume that the user with the given uuid already exists
+        """
+        # TODO: Cookie is not necessary
+        # TODO: expect a user_uuid instead of an ID
         user_uuid = user["uuid"]
+        username = self.DB.getUserWithId(user_uuid)
 
-        # TODO: This if statement is definately too long. Make it more consise
-        # by extracting functions
-        if user_uuid:
-            if type(user_uuid) == tuple:
-                user_uuid = user_uuid[0]
+        # prepare the training images
+        imgs_raw, uuids = self.DB.getTrainingPictures(user_uuid=user_uuid)
+        maxShape = (0, 0)
+        for im in imgs_raw:
+            if im.shape[0]*im.shape[1] > maxShape[0]*maxShape[1]:
+                maxShape = im.shape
 
-            recogUsernames = recogFace([pic, user_uuid])
-
-            imgs_raw, uuids = self.DB.getTrainingPictures(user_uuid=user_uuid)
-            maxShape = (0, 0)
-            for im in imgs_raw:
-                if im.shape[0]*im.shape[1] > maxShape[0]*maxShape[1]:
-                    maxShape = im.shape
-
-            imgs_train = []
-            resized_imgs = []
-            for im in imgs_raw:
-                im = cv2.resize(
-                    im.astype("uint8"),
-                    dsize=(maxShape[1], maxShape[0]),
-                    interpolation=cv2.INTER_CUBIC
-                )
-
-                norm_im = cv2.normalize(
-                    src=im.astype("uint8"), dst=None,
-                    alpha=0, beta=255,
-                    norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U
-                )
-                imgs_train.append(norm_im)
-                float32_im = np.float32(im.astype("uint8"))
-                im_RGB = cv2.cvtColor((float32_im / 256).astype("uint8"), cv2.COLOR_BGR2RGB)
-                resized_imgs.append(im_RGB)
-
-            # TODO: Why is the temp_ID always set to 22?
-            # use temporary integer ID to train a completely new model and check if it recognized the same person in authorisation login picture
-            temp_ID = 22
-
-            cv2Inst = cv2Recog()
-
-            # TODO: The code below was commented out! WHY? Shouldn't we add training data?
-            cv2Inst.train_add_faces(temp_ID, imgs_train, save_model=False)
-
-            # Authorize: check if the training pitures are the same person as the given login picture
-            cv_result, dists = False, None
-            pic = cv2.resize(
-                pic.astype("uint8"),
+        imgs_train = []
+        resized_imgs = []
+        for im in imgs_raw:
+            im = cv2.resize(
+                im.astype("uint8"),
                 dsize=(maxShape[1], maxShape[0]),
                 interpolation=cv2.INTER_CUBIC
             )
-
-            cv_test_img = cv2.normalize(
-                src=pic.astype("uint8"), dst=None,
+            
+            # Normalized images (used for cv2 algorithms)
+            norm_im = cv2.normalize(
+                src=im.astype("uint8"), dst=None,
                 alpha=0, beta=255,
                 norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U
             )
+            imgs_train.append(norm_im)
 
-            testDists = np.zeros(len(imgs_train))
-            try:
-                for train_im_index, train_im in enumerate(imgs_train):
-                    testDists[train_im_index] = cv2Inst.dist_between_two_pics(train_im, cv_test_img)
-                dists = np.min(testDists)
-                cv_result = dists < 125
-            except cv2.error:
-                print("cv2 Algo failed!")
-                pass
+            # only resized images (used for openface algorithms)
+            float32_im = np.float32(im.astype("uint8"))
+            im_RGB = cv2.cvtColor((float32_im / 256).astype("uint8"), cv2.COLOR_BGR2RGB)
+            resized_imgs.append(im_RGB)
 
-            # debug
-            print(f"\nOpenCV result: \nmatch? {cv_result} \ndistances: {dists} \n")
+        ######################## cv2 algorithm ##################################
 
-            openface_result = False
-            try:
-                openface_result = FaceDetection.authorize_user(resized_imgs, pic)
+        # use temporary integer ID to train a completely new model and check if it 
+        # recognized the same person in authorisation login picture
+        cv2Inst = cv2Recog()
+        temp_ID = 22
+        cv2Inst.train_add_faces(temp_ID, imgs_train, save_model=False)
 
-                print(f"openface Algo result: {openface_result}")
-            except Exception:
-                print("openface Algo failed")
+        # Authorize: check if the training pitures are the same person as the given login picture
+        cv_result, dists = False, None
+        pic = cv2.resize(
+            pic.astype("uint8"),
+            dsize=(maxShape[1], maxShape[0]),
+            interpolation=cv2.INTER_CUBIC
+        )
 
-            # When Recognised goto validationauthenticated.html
-            print(recogUsernames)
-            wireMatch = user["username"] in recogUsernames
+        cv_test_img = cv2.normalize(
+            src=pic.astype("uint8"), dst=None,
+            alpha=0, beta=255,
+            norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U
+        )
+        testDists = np.zeros(len(imgs_train))
+        try:
+            for train_im_index, train_im in enumerate(imgs_train):
+                testDists[train_im_index] = cv2Inst.dist_between_two_pics(train_im, cv_test_img)
+            dists = np.min(testDists)
+            cv_result = dists < 125
+        except cv2.error:
+            print("cv2 Algo failed!")
 
-            # TODO: What do 60, 20 and 20 mean?
-            algoScore = int(cv_result) * 60 + int(openface_result) * 20 + int(wireMatch) * 20
+        ####################### openface algorithm #########################
+        openface_result = False
+        try:
+            openface_result = FaceDetection.authorize_user(resized_imgs, pic)
+        except Exception:
+            print("openface Algo failed")
 
-            # TODO: Why has 40 been chosen?
-            if algoScore >= 40:
-                print("User : '{}' recognised!".format(user["username"]), file=sys.stdout)
-                print("AlgoScore : {}".format(algoScore))
+        ################### wire algorithm ############################
+        recogUsernames = recogFace([pic, user_uuid])
+        print(recogUsernames)
+        wireMatch = username in recogUsernames
 
-                return self.DB.insertTrainingPicture(pic, user_uuid)
-            else:
-                print("User : '{}' not recognised!".format(user["username"]), file=sys.stdout)
-                print("AlgoScore : {}".format(algoScore))
-                return False
+
+        ################### evaluate algorithms ############################
+
+        # algorithm is weighted
+        algoScore = int(cv_result) * 60 + int(openface_result) * 20 + int(wireMatch) * 20
+
+        # TODO: Why has 40 been chosen?
+        # The authentication algorithm should only to one thing -> authenticate
+        # the pictures. They shouldn't insert things into the database.
+        if algoScore >= 40:
+            return self.DB.insertTrainingPicture(pic, user_uuid)
         else:
-            print("'{}' not found!".format(user["username"]), file=sys.stdout)
             return False
