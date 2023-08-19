@@ -12,10 +12,10 @@ import cv2
 
 from app.user import BigBrotherUser
 
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "face_recognition", "haar_and_lbph"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "face_recognition", "wire_face_recognition"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "face_recognition", "ultra_light_and_openface"))
-sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "face_recognition"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "face_recog", "haar_and_lbph"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "face_recog", "wire_face_recognition"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "face_recog", "ultra_light_and_openface"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "face_recog"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "DBM"))
 
 import FaceDetection
