@@ -24,6 +24,11 @@ from modifiedFaceRecog import recogFace
 from face_rec_main import train_add_faces, authorize_faces
 from cv2RecogClass import cv2Recog
 
+from face_recognition_strategies.context import FaceRecognitionContext
+from face_recognition_strategies.strategies.cv2_strategy import Cv2Strategy
+from face_recognition_strategies.strategies.openface_strategy import OpenfaceStrategy
+from face_recognition_strategies.strategies.principle_component_analysis_strategy import PCAStrategy
+
 import DatabaseManagement as DBM
 
 
@@ -75,88 +80,33 @@ class websiteSystem:
         # TODO: expect a user_uuid instead of an ID
         user_uuid = user["uuid"]
         username = self.DB.getUserWithId(user_uuid)
+        training_data, _ = self.DB.getTrainingPictures(user_uuid=user_uuid)
 
-        # prepare the training images
-        imgs_raw, uuids = self.DB.getTrainingPictures(user_uuid=user_uuid)
-        maxShape = (0, 0)
-        for im in imgs_raw:
-            if im.shape[0]*im.shape[1] > maxShape[0]*maxShape[1]:
-                maxShape = im.shape
+        face_recognition_context = FaceRecognitionContext(Cv2Strategy())
 
-        imgs_train = []
-        resized_imgs = []
-        for im in imgs_raw:
-            im = cv2.resize(
-                im.astype("uint8"),
-                dsize=(maxShape[1], maxShape[0]),
-                interpolation=cv2.INTER_CUBIC
-            )
-            
-            # Normalized images (used for cv2 algorithms)
-            norm_im = cv2.normalize(
-                src=im.astype("uint8"), dst=None,
-                alpha=0, beta=255,
-                norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U
-            )
-            imgs_train.append(norm_im)
-
-            # only resized images (used for openface algorithms)
-            float32_im = np.float32(im.astype("uint8"))
-            im_RGB = cv2.cvtColor((float32_im / 256).astype("uint8"), cv2.COLOR_BGR2RGB)
-            resized_imgs.append(im_RGB)
-
-        ######################## cv2 algorithm ##################################
-
-        # use temporary integer ID to train a completely new model and check if it 
-        # recognized the same person in authorisation login picture
-        cv2Inst = cv2Recog()
-        temp_ID = 22
-        cv2Inst.train_add_faces(temp_ID, imgs_train, save_model=False)
-
-        # Authorize: check if the training pitures are the same person as the given login picture
-        cv_result, dists = False, None
-        pic = cv2.resize(
-            pic.astype("uint8"),
-            dsize=(maxShape[1], maxShape[0]),
-            interpolation=cv2.INTER_CUBIC
+        face_recognition_context.set_strategy(Cv2Strategy())
+        cv_result = face_recognition_context.execute_strategy(
+            training_data, pic
         )
 
-        cv_test_img = cv2.normalize(
-            src=pic.astype("uint8"), dst=None,
-            alpha=0, beta=255,
-            norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U
+        face_recognition_context.set_strategy(OpenfaceStrategy())
+        openface_result = face_recognition_context.execute_strategy(
+            training_data, pic
         )
-        testDists = np.zeros(len(imgs_train))
-        try:
-            for train_im_index, train_im in enumerate(imgs_train):
-                testDists[train_im_index] = cv2Inst.dist_between_two_pics(train_im, cv_test_img)
-            dists = np.min(testDists)
-            cv_result = dists < 125
-        except cv2.error:
-            print("cv2 Algo failed!")
 
-        ####################### openface algorithm #########################
-        openface_result = False
-        try:
-            openface_result = FaceDetection.authorize_user(resized_imgs, pic)
-        except Exception:
-            print("openface Algo failed")
-
-        ################### wire algorithm ############################
-        recogUsernames = recogFace([pic, user_uuid])
-        print(recogUsernames)
-        wireMatch = username in recogUsernames
-
-
-        ################### evaluate algorithms ############################
+        face_recognition_context.set_strategy(PCAStrategy(user_uuid))
+        pca_result = face_recognition_context.execute_strategy(
+            training_data, pic
+        )
 
         # algorithm is weighted
-        algoScore = int(cv_result) * 60 + int(openface_result) * 20 + int(wireMatch) * 20
+        algoScore = int(cv_result) * 60 + int(openface_result) * 20 + int(pca_result) * 20
 
         # TODO: Why has 40 been chosen?
-        # The authentication algorithm should only to one thing -> authenticate
-        # the pictures. They shouldn't insert things into the database.
+        # The authentication algorithm should only to one thing 
+        # -> authenticate the pictures. They shouldn't insert things into the database.
         if algoScore >= 40:
+            # TODO: Transform image before inserting them into the database.
             return self.DB.insertTrainingPicture(pic, user_uuid)
         else:
             return False
