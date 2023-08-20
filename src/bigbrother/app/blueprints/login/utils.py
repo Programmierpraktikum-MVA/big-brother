@@ -14,9 +14,14 @@ import DatabaseManagement as DBM
 
 def authenticate_picture(user_uuid: uuid.UUID, picture: np.ndarray):
     """
-    Authenticates picture from a certain user
+    Authenticates picture from a certain user.
 
-    We assume that the user with the given uuid already exists
+    Arguments:
+    user_uuid -- This is the user_uuid of the user that you want to authenticate.
+    WARNING: We assume that the user with the given uuid already exists!
+
+    Return:
+    Returns True if the user has been authenticated and False otherwise.
     """
     DB = DBM.wire_DB()
     username = DB.getUserWithId(user_uuid)
@@ -41,13 +46,5 @@ def authenticate_picture(user_uuid: uuid.UUID, picture: np.ndarray):
 
     # algorithm is weighted
     algo_score = int(cv_result) * 60 + int(openface_result) * 20 + int(pca_result) * 20
-
-    # TODO: Why has 40 been chosen?
-    # The authentication algorithm should only to one thing 
-    # -> authenticate the pictures. They shouldn't insert things into the database.
     THRESHHOLD_FOR_WEIGHTED_SCORE = 40
-    if algo_score >= THRESHHOLD_FOR_WEIGHTED_SCORE:
-        # TODO: Transform image before inserting them into the database.
-        return DB.insertTrainingPicture(picture, user_uuid)
-    else:
-        return False
+    return algo_score >= THRESHHOLD_FOR_WEIGHTED_SCORE

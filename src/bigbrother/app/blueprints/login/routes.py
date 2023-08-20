@@ -78,11 +78,14 @@ def login():
         bb_user = user_manager.get_user_by_id(user_uuid)
         login_attempt_time = picture_database.login_user(user_uuid)
 
-        np_image = convert_picture_stream_to_numpy_array(form.pic.data)
-        result = authenticate_picture(user_uuid, np_image)
-        if result:
+        np_picture = convert_picture_stream_to_numpy_array(form.pic.data)
+        if authenticate_picture(user_uuid, np_image):
+            # TODO: Transform image before inserting them into the database?
+            pic_uuid = picture_database.insertTrainingPicture(
+                np_picture, user_uuid
+            )
             picture_database.update_login(
-                user_uuid, login_attempt_time, result
+                user_uuid, login_attempt_time, pic_uuid
             )
             flask_login.login_user(bb_user)
             return render_template("validationauthenticated.html")
