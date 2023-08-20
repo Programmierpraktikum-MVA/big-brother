@@ -7,13 +7,13 @@ class BaseStrategy(ABC):
     """
 
     @abstractmethod
-    def execute(self, data_train, data_test):
+    def execute(self, training_data, testing_data):
         """
         Executes the strategy.
 
         Arguments:
-        data_train -- List of training data.
-        data_test -- List of test data.
+        training_data -- List of training data.
+        testing_data -- List of test data.
 
         Return:
         Returns True if the test data matches with the training data and 
@@ -22,7 +22,7 @@ class BaseStrategy(ABC):
         pass
 
     @abstractmethod
-    def preprocess_training_data(self, data_train):
+    def preprocess_data(self, training_data, testing_data):
         """
         This method converts list of data (mostly images) into correct format 
         for algorithm to work. This method is specifically called on the 
@@ -33,28 +33,11 @@ class BaseStrategy(ABC):
         may also implement different data processors/converters.
 
         Arguments:
-        data_train -- List with training data. 
+        training_data -- List with training data. 
+        testing_data -- This is one test data.
 
         Return:
-        List of processed training data.
-        """
-        pass
-
-    @abstractmethod
-    def preprocess_testing_data(self, data_test):
-        """
-        This method converts list of data (mostly images) into correct format 
-        for algorithm to work. This method is specifically called on the 
-        testing data.
-
-        This might be the case if data have another format in one section of 
-        the code and therefore need to be converted. You
-        may also implement different data processors/converters.
-
-        Arguments:
-        data_test -- List with testing data.
-
-        Return:
-        List of processed testing data.
+        Tuple with processed data. The first entry being the list of training 
+        data and the second entry being the test_data.
         """
         pass

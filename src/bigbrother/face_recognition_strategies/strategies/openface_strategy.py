@@ -9,37 +9,36 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "face_recog"
 import FaceDetection
 
 class OpenfaceStrategy(BaseStrategy):
-    def execute(self, data_train, data_test):
+    def execute(self, training_data, testing_data):
         """
         Executes the openface strategy.
 
         Arguments:
-        data_train -- List of images to train with.
-        data_test -- List with a single test image.
+        training_data -- List of images to train with.
+        testing_data -- A single test image.
 
         Return:
         Returns True if the test data matches with the training data and False
         otherwise.
         """
-        if len(data_test) != 1:
-            return False
+
         try:
-            return FaceDetection.authorize_user(data_train, data_test[0])
+            return FaceDetection.authorize_user(training_data, testing_data)
         except Exception:
             print("openface Algo failed")
             return False
 
-    def preprocess_training_data(self, data_train):
-        maxShape = (0, 0)
-        for im in data_train:
-            if im.shape[0]*im.shape[1] > maxShape[0]*maxShape[1]:
-                maxShape = im.shape
+    def preprocess_data(self, training_data, testing_data):
+        max_shape = (0, 0)
+        for im in training_data:
+            if im.shape[0]*im.shape[1] > max_shape[0]*max_shape[1]:
+                max_shape = im.shape
 
-        processed = []
-        for im in data_train:
+        processed_training_data = []
+        for im in training_data:
             im = cv2.resize(
                 im.astype("uint8"),
-                dsize=(maxShape[1], maxShape[0]),
+                dsize=(max_shape[1], max_shape[0]),
                 interpolation=cv2.INTER_CUBIC
             )
             float32_im = np.float32(im.astype("uint8"))
@@ -47,28 +46,11 @@ class OpenfaceStrategy(BaseStrategy):
                 (float32_im / 256).astype("uint8"), 
                 cv2.COLOR_BGR2RGB
             )
-            processed.append(im_RGB)
-        return processed
+            data_train_processed.append(im_RGB)
 
-    def preprocess_testing_data(self, data_test):
-        """
-        Arguments:
-        data_test -- List of length one containing data to test.
-
-        Return:
-        Returns list of processed testing data. Since this algorithm only
-        accepts one data a list of length one will be returned
-
-        Exception:
-        RuntimeError -- If data_test has more or less than one element.
-        """
-        if len(data_test) != 1:
-            raise RuntimeError("This algorithm only expects exactly one test data.")
-
-        data_test = data_test[0]
-        processed_data = cv2.resize(
-            data_test.astype("uint8"),
-            dsize=(maxShape[1], maxShape[0]),
+        processed_testing_data = cv2.resize(
+            testing_data.astype("uint8"),
+            dsize=(max_shape[1], max_shape[0]),
             interpolation=cv2.INTER_CUBIC
         )
-        return [processed_data]
+        return (processed_testing_data, processed_testing_data)

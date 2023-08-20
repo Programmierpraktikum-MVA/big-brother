@@ -8,46 +8,43 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "face_recog", "haa
 from cv2RecogClass import cv2Recog
 
 class Cv2Strategy(BaseStrategy):
-    def execute(self, data_train, data_test):
+    def execute(self, training_data, testing_data):
         """
         Executes the cv2 strategy.
 
         Arguments:
-        data_train -- List of images to train with.
-        data_test -- List with a single test image.
+        training_data -- List of images to train with.
+        testing_data -- Single image that should compared with the training data.
 
         Return:
         Returns True if the test data matches with the training data and False
         otherwise.
         """
-        if len(data_test) != 1:
-            return False
-
         recognizer = cv2Recog()
         temp_id = 22  # random temporary id
-        recognizer.train_add_faces(temp_id, data_train, save_model=False)
+        recognizer.train_add_faces(temp_id, training_data, save_model=False)
 
-        testDists = np.zeros(len(imgs_train))
+        dist = np.zeros(len(imgs_train))
         try:
-            for train_index, train_im in enumerate(data_train):
-                dist[train_index] = recognizer.dist_between_two_pics(train_im, data_test[0])
+            for train_index, train_im in enumerate(training_data):
+                dist[train_index] = recognizer.dist_between_two_pics(train_im, testing_data)
             dists = np.min(dist)
-            return dists < 125
+            return dist < 125
         except cv2.error:
             print("cv2 Algo failed!")
             return False
 
-    def preprocess_training_data(self, data_train):
-        maxShape = (0, 0)
-        for im in data_train:
-            if im.shape[0]*im.shape[1] > maxShape[0]*maxShape[1]:
-                maxShape = im.shape
+    def preprocess_data(self, trining_data, testing_data):
+        max_shape = (0, 0)
+        for im in training_data:
+            if im.shape[0]*im.shape[1] > max_shape[0]*max_shape[1]:
+                max_shape = im.shape
 
-        processed = []
-        for im in data_train:
+        processed_training_data = []
+        for im in training_data:
             im = cv2.resize(
                 im.astype("uint8"),
-                dsize=(maxShape[1], maxShape[0]),
+                dsize=(max_shape[1], max_shape[0]),
                 interpolation=cv2.INTER_CUBIC
             )
             norm_im = cv2.normalize(
@@ -55,35 +52,17 @@ class Cv2Strategy(BaseStrategy):
                 alpha=0, beta=255,
                 norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U
             )
-            processed.append(norm_im)
+            processed_training_data.append(norm_im)
 
-        return processed
-
-    def preprocess_testing_data(self, data_test):
-        """
-        Arguments:
-        data_test --
-
-        Return:
-        Returns list of processed testing data. Since this algorithm only
-        accepts one data a list of length one will be returned
-
-        Exception:
-        RuntimeError -- If data_test has more or less than one element.
-        """
-        if len(data_test) != 1:
-            raise RuntimeError("This algorithm only expects exactly one test data.")
-
-        data_test = data_test[0]
-        processed_data = cv2.resize(
-            data_test.astype("uint8"),
-            dsize=(maxShape[1], maxShape[0]),
+        resized_testing_data = cv2.resize(
+            testing_data.astype("uint8"),
+            dsize=(max_shape[1], max_shape[0]),
             interpolation=cv2.INTER_CUBIC
         )
-        processed_data = cv2.normalize(
+        processed_training_data = cv2.normalize(
             src=processed_data.astype("uint8"), dst=None,
             alpha=0, beta=255,
             norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U
         )
 
-        return [processed_data]
+        return (processed_training_data, processed_testing_data)

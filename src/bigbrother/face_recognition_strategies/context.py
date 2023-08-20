@@ -43,6 +43,5 @@ class Context:
         """
         Executes the strategy that has been set with the given data.
         """
-        data_train = self.strategy.preprocess_training_images(data_train)
-        data_test = self.strategy.preprocess_testing_images(data_train)
+        data_train, data_test = self.strategy.preprocess_data(data_train, data_test)
         return self.strategy(data_train, data_test)
