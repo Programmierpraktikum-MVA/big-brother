@@ -1,5 +1,6 @@
 import sys
 import os
+import uuid
 
 import numpy as np
 import cv2
@@ -11,7 +12,7 @@ from modifiedFaceRecog import recogFace
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "DBM"))
 import DatabaseManagement as DBM
 
-class OpenfaceStrategy(BaseStrategy):
+class PCAStrategy(BaseStrategy):
     def __init__(self, user_uuid):
         self.DB = DBM.wire_DB()
         self.set_user_uuid(user_uuid)
@@ -36,20 +37,20 @@ class OpenfaceStrategy(BaseStrategy):
         otherwise.
         """
         recog_usernames = recogFace([testing_data, self.user_uuid])
-        wireMatch = username in recog_usernames
+        return self.username in recog_usernames
 
     def preprocess_data(self, training_data, testing_data):
         max_shape = (0, 0)
-        for im in data_train:
-            if im.shape[0]*im.shape[1] > max_shape[0]*max_shape[1]:
-                max_shape = im.shape
+        for d in training_data:
+            if d.shape[0]*d.shape[1] > max_shape[0]*max_shape[1]:
+                max_shape = d.shape
 
         # TODO: Training data is worked with differently in the algorithm.
         # The algorithm accesses the database directly, which shouldn't be done
 
         processed_testing_data = cv2.resize(
             testing_data.astype("uint8"),
-            dsize=(maxShape[1], maxShape[0]),
+            dsize=(max_shape[1], max_shape[0]),
             interpolation=cv2.INTER_CUBIC
         )
         return ([], testing_data)

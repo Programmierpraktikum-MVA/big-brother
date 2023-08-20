@@ -2,6 +2,7 @@ import sys
 import os
 
 import numpy as np
+import cv2
 
 from face_recognition_strategies.strategies.base_strategy import BaseStrategy
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "face_recog", "haar_and_lbph"))
@@ -24,17 +25,19 @@ class Cv2Strategy(BaseStrategy):
         temp_id = 22  # random temporary id
         recognizer.train_add_faces(temp_id, training_data, save_model=False)
 
-        dist = np.zeros(len(imgs_train))
+        dists = np.zeros(len(training_data))
         try:
             for train_index, train_im in enumerate(training_data):
-                dist[train_index] = recognizer.dist_between_two_pics(train_im, testing_data)
-            dists = np.min(dist)
+                dists[train_index] = recognizer.dist_between_two_pics(
+                    train_im, testing_data
+                )
+            dist = np.min(dists)
             return dist < 125
         except cv2.error:
             print("cv2 Algo failed!")
             return False
 
-    def preprocess_data(self, trining_data, testing_data):
+    def preprocess_data(self, training_data, testing_data):
         max_shape = (0, 0)
         for im in training_data:
             if im.shape[0]*im.shape[1] > max_shape[0]*max_shape[1]:
@@ -59,8 +62,8 @@ class Cv2Strategy(BaseStrategy):
             dsize=(max_shape[1], max_shape[0]),
             interpolation=cv2.INTER_CUBIC
         )
-        processed_training_data = cv2.normalize(
-            src=processed_data.astype("uint8"), dst=None,
+        processed_testing_data = cv2.normalize(
+            src=resized_testing_data.astype("uint8"), dst=None,
             alpha=0, beta=255,
             norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_8U
         )

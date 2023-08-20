@@ -21,7 +21,6 @@ class OpenfaceStrategy(BaseStrategy):
         Returns True if the test data matches with the training data and False
         otherwise.
         """
-
         try:
             return FaceDetection.authorize_user(training_data, testing_data)
         except Exception:
@@ -46,7 +45,7 @@ class OpenfaceStrategy(BaseStrategy):
                 (float32_im / 256).astype("uint8"), 
                 cv2.COLOR_BGR2RGB
             )
-            data_train_processed.append(im_RGB)
+            processed_training_data.append(im_RGB)
 
         processed_testing_data = cv2.resize(
             testing_data.astype("uint8"),
