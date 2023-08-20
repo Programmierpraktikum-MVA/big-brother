@@ -174,14 +174,14 @@ class QAAlgo:
 
 
 # Usage
-model_name = "timpal0l/mdeberta-v3-base-squad2"
+model_name = "timpal0l/mdeberta-v3-base-squad2" # set up hugging face model name
 # perform s2t
-recog = SpeechRecog("audio.mp3")
+recog = SpeechRecog("example_audio") # set the audio file which will be transcribed
 # define context
 context, tags = recog.transcribe()
 
 # ask a question
-question = "Wenn reicht die Prolog Geschichte?"
+question = "example_question" # ask your question
 
 # handle question answering
 qa_result = QAAlgo(model_name)
