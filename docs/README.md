@@ -180,6 +180,7 @@ A code named example_usage_FaceReco_class is basically just an example of using 
 # Examples
 ## DatabaseManagement
 - [Basic video management](examples/DBM/DatabaseManagement/videoInsertionRetrivalAndDeletion.py)
+- [Basic eduVid](examples/eduVid/qa_usage.py)
 
 # API Documentation
 The API documentation can be found in [here](API%20Documentation/README.md).
