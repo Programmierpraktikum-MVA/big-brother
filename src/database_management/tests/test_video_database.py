@@ -1,7 +1,7 @@
 import sys
+import os
 import unittest
 import uuid
-sys.path.append("..")
 
 from parameterized import parameterized
 import mongomock
@@ -10,7 +10,9 @@ from PIL import Image
 import numpy as np
 import cv2
 
-from DatabaseManagement import vid_DB, UserDoesntExist
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from database_management.video_database import VideoDatabase
+from database_management.exceptions import UserDoesntExistException
 
 class VidDBTest(unittest.TestCase):
     def output_assertEqual(self, check, expected):
@@ -22,7 +24,7 @@ class VidDBTest(unittest.TestCase):
                                        socketTimeoutMS=None,
                                        connect=False,
                                        maxPoolsize=1)
-        self.db = vid_DB(client)
+        self.db = VideoDatabase(client)
         enable_gridfs_integration()
 
     def test_video_insertion_non_existent_user(self):
@@ -34,8 +36,8 @@ class VidDBTest(unittest.TestCase):
         self.db.register_user("me2", None)
 
         stream_insert = open(source, "rb+")
-        self.assertRaises(UserDoesntExist, 
-                          self.db.insertVideo, 
+        self.assertRaises(UserDoesntExistException, 
+                          self.db.insert_video, 
                           stream_insert, uuid.uuid1(), "", "")
         stream_insert.close()
 
@@ -48,7 +50,7 @@ class VidDBTest(unittest.TestCase):
         user_id = self.db.register_user("me", None)
 
         stream_insert = open(source, "rb+")
-        vid_uuid = self.db.insertVideo(
+        vid_uuid = self.db.insert_video(
                 stream_insert, 
                 user_id, 
                 filename, 
@@ -57,7 +59,7 @@ class VidDBTest(unittest.TestCase):
         stream_insert.close()
 
         stream_out = open(compare, "wb+")
-        ret_id, ret_fn, ret_transc = self.db.getVideoStream(vid_uuid, stream_out)
+        ret_id, ret_fn, ret_transc = self.db.get_video_stream(vid_uuid, stream_out)
         stream_out.close()
 
         self.assertEqual(user_id, ret_id)
@@ -80,7 +82,7 @@ class VidDBTest(unittest.TestCase):
         vid_ids = []
         for i in range(10):
             stream_insert = open(source, "rb+")
-            vid_uuid = self.db.insertVideo(
+            vid_uuid = self.db.insert_video(
                     stream_insert, 
                     user_id, 
                     filename, 
@@ -89,7 +91,7 @@ class VidDBTest(unittest.TestCase):
             stream_insert.close()
             vid_ids.append(vid_uuid)
 
-        ret_vid_ids = self.db.getVideoIDOfUser(user_id)
+        ret_vid_ids = self.db.get_video_id_of_user(user_id)
 
         # testing equality
         vid_ids.sort()
@@ -111,8 +113,8 @@ class VidDBTest(unittest.TestCase):
         user_id = self.db.register_user(f"me", None)
         for i in range(num_vid_to_test):
             stream_insert = open(source, "rb+")
-            vid_uuid = self.db.insertVideo(
-                    stream_insert, 
+            vid_uuid = self.db.insert_video(
+                    stream_insert,
                     user_id, 
                     filename, 
                     video_transcript
@@ -124,10 +126,10 @@ class VidDBTest(unittest.TestCase):
         # deleting videos
         for _ in range(num_vid_to_test):
             vid_to_delete = vid_ids.pop()
-            self.assertTrue(self.db.deleteVideo(vid_to_delete))
+            self.assertTrue(self.db.delete_video(vid_to_delete))
 
             # compare
-            ret_vid_ids = self.db.getVideoIDOfUser(user_id)
+            ret_vid_ids = self.db.get_video_id_of_user(user_id)
             ret_vid_ids.sort()
             self.assertEqual(vid_ids, ret_vid_ids)
 

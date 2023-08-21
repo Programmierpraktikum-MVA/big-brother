@@ -1,7 +1,6 @@
 import sys
 import unittest
 import uuid
-#sys.path.append("..")
 
 from parameterized import parameterized
 import bson
@@ -9,17 +8,19 @@ import mongomock
 import os
 import numpy as np
 import pickle
-sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
-from DatabaseManagement import BBDB,UsernameExists
 
-class BBDBTest(unittest.TestCase):
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", ".."))
+from database_management.base_database import BaseDatabase
+from database_management.exceptions import UsernameExistsException
+
+class BaseDatabaseTest(unittest.TestCase):
     def output_assertEqual(self, check, expected):
         self.assertEqual(check, expected, 
                          f"Expected {expected}, but {check} found.")
 
     def setUp(self):
         client = mongomock.MongoClient()
-        self.db = BBDB(mongo_client=client)
+        self.db = BaseDatabase(mongo_client=client)
     
     @parameterized.expand([
         [
@@ -73,12 +74,12 @@ class BBDBTest(unittest.TestCase):
 
         Following functions are tested:
         - register_user
-        - getUser
-        - getUsername
-        - getUsers
-        - getUserWithId
+        - get_user
+        - get_username
+        - get_users
+        - get_userWithId
         """
-        self.assertDictEqual(self.db.getUsers(), 
+        self.assertDictEqual(self.db.get_users(), 
                              {}, 
                              "Dictionary is supposed to be emtpy")
         user_ids = []
@@ -87,25 +88,25 @@ class BBDBTest(unittest.TestCase):
             user_ids.append(tmp)
             l = len(user_ids)
 
-            self.assertEqual(len(self.db.getUsers()), l, 
+            self.assertEqual(len(self.db.get_users()), l, 
                              "Amount of users isn't correct")
-            self.assertEqual(len(self.db.getUsers(limit=l//2)), l//2, 
-                             "Limit-Keyword from BBDB.getUsers might not be implemented correctly")
+            self.assertEqual(len(self.db.get_users(limit=l//2)), l//2, 
+                             "Limit-Keyword from BaseDatabase.get_users might not be implemented correctly")
             self.output_assertEqual(
-                    self.db.getUsers(), 
+                    self.db.get_users(), 
                     {user_ids[i]: usernames[i] for i in range(l)}
                 )
         self.assertEqual(len(user_ids), len(set(user_ids)),
                          "User IDs are not unique.")
     
         for i in range(len(usernames)):
-            self.output_assertEqual(self.db.getUserWithId(user_ids[i]), usernames[i])
-            self.output_assertEqual(self.db.getUser(usernames[i]), user_ids[i])
+            self.output_assertEqual(self.db.get_user_with_id(user_ids[i]), usernames[i])
+            self.output_assertEqual(self.db.get_user(usernames[i]), user_ids[i])
 
-        self.output_assertEqual(self.db.getUsername(user_ids[::2]), usernames[::2])
-        self.output_assertEqual(self.db.getUsername(user_ids[::-2]), usernames[::-2])
-        self.output_assertEqual(self.db.getUsername(user_ids[::-1]), usernames[::-1])
-        self.output_assertEqual(self.db.getUsername(user_ids[::3]), usernames[::3])
+        self.output_assertEqual(self.db.get_username(user_ids[::2]), usernames[::2])
+        self.output_assertEqual(self.db.get_username(user_ids[::-2]), usernames[::-2])
+        self.output_assertEqual(self.db.get_username(user_ids[::-1]), usernames[::-1])
+        self.output_assertEqual(self.db.get_username(user_ids[::3]), usernames[::3])
 
     def test_registration_with_existing_username(self):
         """
@@ -113,7 +114,7 @@ class BBDBTest(unittest.TestCase):
         """
         # TODO: User encoding ID ask again...
         self.db.register_user("name", None)
-        self.assertRaises(UsernameExists, 
+        self.assertRaises(UsernameExistsException, 
                           self.db.register_user, 
                           "name", None)
 
@@ -123,18 +124,18 @@ class BBDBTest(unittest.TestCase):
         the users that you want to do not exist.
 
         Tests the following methods:
-        - getUser
-        - getUsername
-        - getUsers
-        - getUserWithId
+        - get_user
+        - get_username
+        - get_users
+        - get_user_with_id
         """
-        self.output_assertEqual(self.db.getUser(str(uuid.uuid1())), None)
+        self.output_assertEqual(self.db.get_user(str(uuid.uuid1())), None)
         self.output_assertEqual(
-                self.db.getUsername([uuid.uuid1(), uuid.uuid1()]), 
+                self.db.get_username([uuid.uuid1(), uuid.uuid1()]), 
                 [None, None]
             )
-        self.output_assertEqual(self.db.getUsers(), {})
-        self.output_assertEqual(self.db.getUserWithId(uuid.uuid1()), None)
+        self.output_assertEqual(self.db.get_users(), {})
+        self.output_assertEqual(self.db.get_user_with_id(uuid.uuid1()), None)
     
     def test_basic_login_workflow(self):
         # TODO: Maybe implement more tests like this
@@ -144,29 +145,29 @@ class BBDBTest(unittest.TestCase):
         # The pic uuid is assumed to be correct 
         inserted_pic_uuid = uuid.uuid1()
         self.assertEqual(
-                self.db.update_login(user_uuid=user_id,
-                                     time=timestamp,
-                                     inserted_pic_uuid=inserted_pic_uuid),
-                inserted_pic_uuid)
-        self.assertEqual(self.db.getLoginLogOfUser(user_id)[0][0],
+                self.db.update_login(
+                    user_id,timestamp,inserted_pic_uuid),
+                    inserted_pic_uuid
+                )
+        self.assertEqual(self.db.get_login_log_of_user(user_id)[0][0],
                          timestamp)
     
     def test_basic_user_deletion(self):
         user_id = self.db.register_user("user", None)
-        self.assertTrue(self.db.delUser(user_id))
+        self.assertTrue(self.db.delete_user(user_id))
 
     def test_deletion_non_existing_user(self):
         self.db.register_user("user1", None)
         self.db.register_user("user2", None)
-        self.assertFalse(self.db.delUser(uuid.uuid1()))
+        self.assertFalse(self.db.delete_user(uuid.uuid1()))
     
-    def test_duplicate_getUsers(self):
+    def test_duplicate_get_users(self):
         user_ids = [
                 self.db.register_user("user0", None),
                 self.db.register_user("user1", None),
             ]
         self.output_assertEqual(
-                self.db.getUsername([user_ids[0], user_ids[1], user_ids[0]]),
+                self.db.get_username([user_ids[0], user_ids[1], user_ids[0]]),
                 ["user0", "user1", "user0"]
             )
     
@@ -197,11 +198,11 @@ class BBDBTest(unittest.TestCase):
         new_user_id = self.db.register_user(username, user_encoding)
 
         # Check if the user exists in the database
-        self.assertTrue(self.db.checkUserIDExists(new_user_id))
-        self.assertEqual(self.db.getUsername([new_user_id]), [username])
+        self.assertTrue(self.db.check_user_id_exists(new_user_id))
+        self.assertEqual(self.db.get_username([new_user_id]), [username])
 
         # Test registering a user with an existing username
-        with self.assertRaises(UsernameExists):
+        with self.assertRaises(UsernameExistsException):
             self.db.register_user(username, user_encoding)
 
 if __name__ == "__main__":
