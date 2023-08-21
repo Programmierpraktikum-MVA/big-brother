@@ -175,6 +175,7 @@ A code named example_usage_FaceReco_class is basically just an example of using 
 
 # Tutorials
 - [Introduction to our database](tutorials/introduction_to_our_database.md)
+- [Introduction to eduVid](tutorials/introduction_to_eduVid.md)
 
 # Examples
 ## DatabaseManagement
