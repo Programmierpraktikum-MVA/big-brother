@@ -19,7 +19,7 @@ class GestureRecognizer:
 
         path = os.path.dirname(os.path.abspath(__file__))
         model_dir = os.path.abspath(os.path.join(path, 'mp_hand_gesture'))
-        self.model = load_model(model_dir)
+        self.model = tf.keras.layers.TFSMLayer(model_dir, call_endpoint='serving_default')
 
         gesture_dir = os.path.abspath(os.path.join(path, 'gesture.names'))
 
