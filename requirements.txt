@@ -13,20 +13,17 @@ Flask-Session==0.3.2
 python-engineio==3.13.2
 python-socketio==4.6.0
 
-### gesture recognition ###
-mediapipe_model_maker
-
 ### opencv ###
 opencv-python
 opencv-contrib-python
 onnx
 onnx_tf
 onnxruntime
-tensorflow==2.15.0
-tensorflow_addons==0.22.0
+tensorflow==2.8.0
+tensorflow_addons==0.16.1
 tensorflow-estimator==2.12.0
 tensorflow_io_gcs_filesystem==0.25.0
-tensorflow_probability==0.23.0
+tensorflow_probability==0.16.0
 imutils
 open-faces
 keras==2.8.0
@@ -59,4 +56,3 @@ dnspython
 
 ### aditional ###
 protobuf==3.20.*
-
