@@ -10,49 +10,73 @@
 
 {% block content %}
     <div id="container">
-        <center>
-            <table cellspacing="0" cellpadding="0" class="table_report_line">
-                <tbody>
-                    <tr>
-                        <td>Your Webcam</td>
-                        <td>Gesture recognition</td>
-                    </tr>
-                    <tr>
-                        <td>
-                            <canvas id="originalWebcamCanvas" hidden></canvas>
-                            <video autoplay="true" id="videoElement"></video>
-                        </td>
-                        <td>
-                            <div id="actionsContainer">
-                                <h3>Actions:</h3>
-                                <div id="actionList">one, peace, three, four, highfive, call, ok, like, dislike, italy, rock, closed_fist</div>
-                                <textarea id="luaResultField" rows="4" cols="50" placeholder="Lua script result will be displayed here"></textarea>
-                                <canvas id="gestureCanvas"></canvas>
-                                <br>
-                                <!-- New text field for Lua script result -->
-                            </div>
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-            <br>
-            <button onclick="location.href='{{ url_for('logic.action_control') }}'">Go to Action Control</button>
-        </center>
+        <table cellspacing="0" cellpadding="0" class="table_report_line">
+            <tbody>
+                <tr>
+                    <td>Your Webcam</td>
+                    <td>Gesture recognition</td>
+                </tr>
+                <tr>
+                    <td>
+                        <canvas id="originalWebcamCanvas" hidden></canvas>
+                        <video autoplay="true" id="videoElement"></video>
+                    </td>
+                    <td>
+                        <div id="actionsContainer">
+                            <h3>Actions:</h3>
+                            <div id="actionList">one, peace, three, four, highfive, call, ok, like, dislike, italy, rock, closed_fist</div>
+                            <textarea id="luaResultField" rows="4" cols="50" placeholder="Lua script result will be displayed here"></textarea>
+                            <canvas id="gestureCanvas"></canvas>
+                            <br>
+                            <!-- New text field for Lua script result -->
+                        </div>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+        <br>
+        <button onclick="location.href='{{ url_for('logic.action_control') }}'">Go to Action Control</button>
     </div>
 {% endblock %}
 
 {% block js %}
     {{ super() }}
     <script src="{{ url_for('static', filename='js/gestureRecognition.js') }}"></script>
-    <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+    <script type="text/javascript" src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g=" crossorigin="anonymous"></script>
     <script>
-        var socket = io.connect('http://' + document.domain + ':' + location.port + '/gesture_recognition');
+        var gestureSocket = io.connect('http://' + document.domain + ':' + location.port + '/gesture_recognition');
 
-        socket.on('ack_gesture_recognition', function(data) {
-            if (data.lua_result !== "No script found") {
+        gestureSocket.on('ack_gesture_recognition', function(data) {
+            if (data && data.lua_result && data.lua_result !== "No script found") {
                 $('#luaResultField').val(data.lua_result);
+            }
+            if (data && data.image) {
+                const gestureCanvas = document.querySelector("#gestureCanvas");
+                const video = document.querySelector("video");
+                if (gestureCanvas && video) {
+                    gestureCanvas.width = video.videoWidth;
+                    gestureCanvas.height = video.videoHeight;
+                    var ctx = gestureCanvas.getContext("2d");
+                    var img = new Image;
+                    img.onload = function(){
+                        ctx.drawImage(img, 0, 0, gestureCanvas.width, gestureCanvas.height);
+                    };
+                    img.src = data.image;
+                }
             }
         });
     </script>
 {% endblock %}
+
+<style>
+#container {
+    text-align: center; /* Zentriert Inline- und Inline-Block-Elemente innerhalb des Containers */
+}
+
+.table_report_line, #container button { /* Oder eine spezifischere Klasse/ID für den Button */
+    margin-left: auto;
+    margin-right: auto;
+    /* Ggf. eine display: block; Eigenschaft hinzufügen, falls sie es nicht schon sind */
+}
+</style>

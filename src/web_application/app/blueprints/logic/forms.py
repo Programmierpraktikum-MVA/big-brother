@@ -1,11 +1,11 @@
 from flask_wtf import FlaskForm
-from wtforms import TextField, SubmitField
+from wtforms import StringField, SubmitField
 from wtforms.validators import DataRequired
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 
 
 class VideoUploadForm(FlaskForm):
-    name = TextField("Name:", validators=[DataRequired()])
+    name = StringField("Name:", validators=[DataRequired()])
     video = FileField(
         "Video:",
         validators=[
@@ -18,10 +18,10 @@ class VideoUploadForm(FlaskForm):
             DataRequired(),
             FileAllowed(["json"])
         ])
-    question = TextField("Question:", validators=[DataRequired()])
+    question = StringField("Question:", validators=[DataRequired()])
     submit = SubmitField("Upload")
 
 
 class QueryForm(FlaskForm):
-    query = TextField("Query", validators=[DataRequired()])
+    query = StringField("Query", validators=[DataRequired()])
     submit = SubmitField("Search")

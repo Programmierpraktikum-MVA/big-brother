@@ -4,7 +4,6 @@ import numpy as np
 from numpy.linalg import norm
 import onnx
 import onnxruntime as ort
-from onnx_tf.backend import prepare
 import os, sys
 import dlib
 from imutils import face_utils
@@ -143,7 +142,6 @@ def predict(width, height, confidences, boxes, prob_threshold, iou_threshold=0.5
 
 onnx_path = os.path.join(os.path.dirname(__file__), 'Model', 'ultra_light_640.onnx')
 onnx_model = onnx.load(onnx_path)
-predictor = prepare(onnx_model)
 ort_session = ort.InferenceSession(onnx_path)
 input_name = ort_session.get_inputs()[0].name
 
