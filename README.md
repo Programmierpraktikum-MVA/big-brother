@@ -5,23 +5,18 @@ if there isn't any other way.
 
 # Getting Started
 
-## Understanding the project
-1. Setup ssh-key.
-2. Clone repository into your local folder (`git clone <ssh-url>`)
-3. **Read our contribution guidelines [here](./CONTRIBUTING.md)!**
-4. Browse through our [documentation](#documentation)
-
-## Project setup
-You have a few options when executing the project locally. You can run it in
-the docker container or install the packages locally (in an environment for 
-instance) to run the flask server. Be aware that the docker container takes
-quite some time to build. Most of the time it would be more practical to have
+## Setup 
+1. Setup ssh-key and clone repository into your local folder (`git clone <ssh-url>`), or just clone using https: `git clone <https-url>`.
+2. **Read our contribution guidelines [here](./CONTRIBUTING.md)!**
+3. Browse through our [documentation](#documentation)
+4. Setup the project either via Docker or in a local python environment. Most of the time it would be more practical to have
 a python environment setup.
 
+
 ### Docker
-Installing via Docker `doesn't` work on macOS. Otherwise the docker setup is pretty straightforward. You may either use the docker desktop GUI
+Installing via Docker **doesn't** work on macOS or Windows. Otherwise the docker setup is pretty straightforward. You may either use the docker desktop GUI. Be aware that the docker container takes quite some time to build.
 or the CLI. In case you use the CLI:
-1. To into the root of the git repository.
+1. Open a terminal in the root of the git repository.
 2. Execute `docker build -t bigbrother .`. This takes quite a long time and 
 requires an internet connection. 
 3. Execute `docker run -p 3000:3000 bigbrother:latest`. The `3000` refers to
@@ -36,19 +31,20 @@ It's important to mention again that we use **Python 3.10**. Other versions are 
 although you are welcome to try in future iterations of the project. All steps 
 where you use the commandline are executed inside of the root directory of the
 
-## Installation on Windows
-1. You need to have the visual c++ redistributables https://learn.microsoft.com/en-us/cpp/windows/latest-supported-vc-redist?view=msvc-170 installed. 
-2. Install MongoDB and make sure that it's active. Important when trying to start the WebApp. 
-3. Install **Python 3.10**. Make sure that you also have the package manager
-pip installed. This should be the case if you installed python with the 
-installer from the official website.
-4. Create a Python virtual environment (optional but highly recommended) using `python3.10 -m venv .env`. The name .env is preferred since it's already listed in .gitignore. To activate it, run `.env\Scripts\Activate.ps1` (PowerShell) or `.env\Scripts\activate.bat` (Command Prompt).
-5. Manually install dlib: `pip install dlib-binary`
-6. Install  the requirements with `pip install -r requirements.txt`.
-7. Execute `python ./src/bigbrother/run.py` to start the flask app. You can 
+#### Installation on Windows
+0. We would recommend to use WSL to emulate a Linux enviroment and install this project using the Linux steps. If you don't want to do that, continue here.
+1. You need to have Visual Studio and it's C++ Desktop Package installed. 
+2. Install MongoDB Community Server and make sure that it's active. Important when trying to start the WebApp. 
+3. Install **Python 3.10**. The packges manager pip should be installed alongside Python automatically.
+4. Install CMake and Git if you haven't already. Restart your PC to make sure that your PATH gets properly updated.
+5. Clone the repository into your folder.
+5. Create a Python virtual environment (optional but highly recommended) using `python -m venv .env`. The name .env is preferred since it's already listed in .gitignore. To activate it, run `.env\Scripts\Activate.ps1` (PowerShell), `.env\Scripts\activate.bat` (Command Prompt) or `source .env/Scripts/activate` (Git Bash).
+6. Manually install dlib: `pip install dlib-binary`
+7. Install  the requirements with `pip install -r requirements.txt`.
+8. Execute `python ./src/bigbrother/run.py` to start the flask app. You can 
 then go to `127.0.0.1:3000` in your webbrowser.
 
-## Installation on macOS
+#### Installation on macOS
 1. Make sure you have homebrew installed, then `brew install cmake` and `brew install libpng`.
 2. Install MongoDB-Community and make sure that it's active with `brew services start mongodb-community`
 3. Install **Python 3.10**, `brew install python@3.10`. The package manager pip should be automatically installed as well.
@@ -58,7 +54,7 @@ then go to `127.0.0.1:3000` in your webbrowser.
 then go to `127.0.0.1:3000` in your webbrowser.
 
 
-## Installation on Linux (untested)
+#### Installation on Linux (untested)
 
 
 # Documentation

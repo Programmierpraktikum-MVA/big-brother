@@ -4,6 +4,7 @@ __pycache__
 .vim
 .gitconfig
 .vscode
+.vs
 .env
 venv
 config.json
