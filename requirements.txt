@@ -48,6 +48,7 @@ faster-whisper
 moviepy
 nltk
 langdetect
+easyocr
 
 
 ### Data ###
