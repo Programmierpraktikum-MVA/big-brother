@@ -1,0 +1,35 @@
+{
+  "nodes": [
+    { "id": "Teacher" },
+    { "id": "Student" },
+    { "id": "Exam" },
+    { "id": "Material" }
+  ],
+  "edges": [
+    {
+      "from": "Teacher",
+      "to": "Student",
+      "label": "teaches"
+    },
+    {
+      "from": "Teacher",
+      "to": "Exam",
+      "label": "prepares"
+    },
+    {
+      "from": "Student",
+      "to": "Exam",
+      "label": "takes"
+    },
+    {
+      "from": "Student",
+      "to": "Material",
+      "label": "learns"
+    },
+    {
+      "from": "Teacher",
+      "to": "Material",
+      "label": "creates"
+    }
+  ]
+}

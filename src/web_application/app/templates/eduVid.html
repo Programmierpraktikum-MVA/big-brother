@@ -40,26 +40,28 @@
     <div class="container mt-5">
         <div class="title-section mb-4">
             <img src="/static/img/BigBrotherIcon.jpg" alt="Big Brother Icon" width="50" height="50">
-            <h1>Search Educational Videos - with BigBrother</h1>
+            <h1>Test-Llama-3</h1>
         </div>
-        <form id="search-form">
+        <form method="post" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
             <div class="form-group">
-                <input type="text" id="query" class="form-control" placeholder="Enter your query">
-                <div id="error-message" class="error-message" style="display: none;">Please enter a query.</div>
+                {{ form.query(class="form-control", placeholder="Enter your query") }}
             </div>
-            <button type="submit" class="btn btn-primary">Search</button>
-            <div class="spinner-border text-primary ml-2" role="status" id="loading-spinner">
-                <span class="sr-only">Loading...</span>
+            <div class="form-group">
+                {{ form.file(class="form-control") }}
             </div>
+            {{ form.submit(class="btn btn-primary") }}
+            <div class="result">
+                <h2>Your result is:</h2>
+            </div>
+            {% if answer_text %}
+                <div class="query-answer">{{ answer_text }}</div>
+            {% if answer_link %}
+                <div class="query-answer">
+                    <iframe src="{{ url_for('static', filename=answer_link) }}" width="600" height="400" style="border:none;"></iframe>
+                </div>
+            {% endif %}
         </form>
-        <div class="mt-5" id="results-container" style="display: none;">
-            <h2 class="mb-4">Here are some video recommendations about your question:</h2>
-            <div class="row" id="results"></div>
-        </div>
-        <div class="mt-5">
-            <h2 class="mb-4 toggle-section" id="toggle-courses">Available Courses</h2>
-            <div id="courses"></div>
-        </div>
     </div>
 {% endblock %}
 

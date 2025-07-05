@@ -1,6 +1,6 @@
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
-from wtforms.validators import DataRequired
+from wtforms.validators import DataRequired, Optional
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 
 
@@ -23,5 +23,11 @@ class VideoUploadForm(FlaskForm):
 
 
 class QueryForm(FlaskForm):
-    query = StringField("Query", validators=[DataRequired()])
+    query = StringField("Query", validators=[Optional()])
+    file = FileField(
+        "Bild oder PDF hochladen:",
+        validators=[
+            FileAllowed(["png", "jpg", "jpeg", "pdf"], "Nur JPG, PNG oder PDF erlaubt!")
+        ]
+    )
     submit = SubmitField("Search")

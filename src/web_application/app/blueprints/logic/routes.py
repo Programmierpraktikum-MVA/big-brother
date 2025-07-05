@@ -30,6 +30,8 @@ from app import application, socketio
 from gesture_recognizer import GestureRecognizer
 import question_answering.qa_algo_core as qa
 
+import Graphing.Graphing as gr
+
 from base_database import BaseDatabase
 from lua_sandbox_runner import run_lua_in_sandbox
 
@@ -306,7 +308,24 @@ def old_eduVid():
 @logic.route("/eduVid", methods=["GET", "POST"])
 @flask_login.login_required
 def eduVid():
-    return render_template("eduVid.html")
+    form = QueryForm()
+    if form.validate_on_submit():
+        user_input = form.query.data
+        uploaded_file = form.file.data
+        if user_input:
+            # Folgende Methode nutzt Llama um eine Antwort zu generieren, gerne anpassen
+            answer = qa.TextToText.answerWithLlama(user_input)
+            print(answer)
+            content = answer.get("content", "")
+            return render_template("eduVid.html", form=form, answer_text=content)
+        if uploaded_file:
+            #answer = Platzhalter für Funktion, welche die Datei verarbeitet und JSON Zurückgibt, json kommt dann zwei zeilen drunter in "json_data"
+            static_folder = os.path.join(application.root_path, "static")
+            answer= gr.create_graph_html_from_json(json_data, static_folder)
+            print(answer)
+            #Wenn zusätzlich Text zurückgegeben werden soll, einfach im return answer_text= blabla ändern
+            return render_template("eduVid.html", form=form, answer_link=answer)
+    return render_template("eduVid.html", form=form)
 
 
 @logic.route('/search', methods=['POST'])

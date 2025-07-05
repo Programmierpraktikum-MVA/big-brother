@@ -1,7 +1,13 @@
 from moviepy.video.io.VideoFileClip import VideoFileClip
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering
+
+import transformers
+from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
+
 import torch
 from faster_whisper import WhisperModel
+
+from huggingface_hub import login
+login("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")
 
 
 class HelperFN:
@@ -231,3 +237,43 @@ class QAAlgo:
 
         answer = self.tokenizer.convert_tokens_to_string(final_answer_tokens)
         return answer
+    
+class TextToText:
+    """
+    This class performs text to text algorithm with Llama 3 model.
+    """
+    
+    def answerWithLlama(question):
+
+        model_id = "meta-llama/Meta-Llama-3-8B-Instruct"
+
+        pipeline = transformers.pipeline(
+            "text-generation",
+            model=model_id,
+            model_kwargs={"torch_dtype": torch.bfloat16},
+            device_map="auto",
+        )
+
+        messages = [
+        {"role": "user", "content": question},
+        ]
+
+        terminators = [
+            pipeline.tokenizer.eos_token_id,
+            pipeline.tokenizer.convert_tokens_to_ids("<|eot_id|>")
+        ]
+
+        outputs = pipeline(
+            messages,
+            max_new_tokens=256,
+            eos_token_id=terminators,
+            do_sample=True,
+            temperature=0.6,
+            top_p=0.9,
+        )
+        return (outputs[0]["generated_text"][-1])
+
+if __name__ == "__main__":
+    frage = "What is the capital of Germany?"
+    antwort = TextToText.answerWithLlama(frage)
+    print("Antwort:", antwort)
