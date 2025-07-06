@@ -15,5 +15,6 @@ llama_index
 llama_parse
 sentence_transformers
 matplotlib
+python-dotenv
 
 pygame

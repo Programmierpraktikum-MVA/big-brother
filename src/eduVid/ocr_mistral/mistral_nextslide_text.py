@@ -1,7 +1,11 @@
 from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
 import torch
 from langdetect import detect
+from dotenv import load_dotenv
 import os
+
+# Load environment variables from .env.local file
+load_dotenv(dotenv_path="env.local")
 
 # ========== Mistral ==========
 print("\n=== Mistral (Mistral-7B-Instruct-v0.3) ===")
