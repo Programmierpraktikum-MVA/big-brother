@@ -7,7 +7,7 @@ import torch
 from faster_whisper import WhisperModel
 
 from huggingface_hub import login
-login("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")
+login("KEY")
 
 
 class HelperFN:

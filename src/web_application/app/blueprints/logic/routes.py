@@ -2,6 +2,7 @@ import os
 import sys
 import io
 import json
+import importlib.util
 from datetime import datetime, timedelta
 
 from flask import (render_template, request, Blueprint, url_for, send_from_directory, redirect, Response, jsonify)
@@ -28,7 +29,7 @@ from app.blueprints.logic.forms import VideoUploadForm, QueryForm
 from app import application, socketio
 
 from gesture_recognizer import GestureRecognizer
-import question_answering.qa_algo_core as qa
+# import question_answering.qa_algo_core as qa  # DISABLED - Llama 4 nicht mehr laden
 
 import Graphing.Graphing as gr
 
@@ -305,9 +306,14 @@ def old_eduVid():
     return render_template("eduVid_old.html", form=form)
 
 
-@logic.route("/eduVid", methods=["GET", "POST"])
+@logic.route("/eduVid_old_llama", methods=["GET", "POST"])
 @flask_login.login_required
-def eduVid():
+def eduVid_old_llama():
+    """
+    OLD IMPLEMENTATION - NOT USED
+    Diese Funktion nutzte Llama 4 für Text-zu-Text Generation.
+    Wurde ersetzt durch neue OCR + Mistral Implementierung.
+    """
     form = QueryForm()
     if form.validate_on_submit():
         user_input = form.query.data
@@ -325,6 +331,99 @@ def eduVid():
             print(answer)
             #Wenn zusätzlich Text zurückgegeben werden soll, einfach im return answer_text= blabla ändern
             return render_template("eduVid.html", form=form, answer_link=answer)
+    return render_template("eduVid.html", form=form)
+
+
+@logic.route("/eduVid", methods=["GET", "POST"])
+@flask_login.login_required
+def eduVid():
+    """
+    Verarbeitet hochgeladene PDFs oder Bilder mit OCR und zeigt extrahierten Text an.
+    """
+    import os
+    import importlib.util
+    import tempfile
+
+    form = QueryForm()
+    if form.validate_on_submit():
+        user_input = form.query.data
+        uploaded_file = form.file.data
+
+        if uploaded_file:
+            try:
+                print("DEBUG: Datei hochgeladen, starte OCR...")
+
+                # Dateiendung ermitteln
+                filename = uploaded_file.filename
+                ext = os.path.splitext(filename)[1].lower()
+
+                # Datei temporär speichern
+                with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp_file:
+                    tmp_file.write(uploaded_file.read())
+                    tmp_path = tmp_file.name
+
+                print(f"DEBUG: Temporäre Datei gespeichert unter {tmp_path}")
+
+              
+                current_dir = os.path.abspath(os.path.dirname(__file__))
+                ocr_file_path = os.path.normpath(os.path.join(
+                    current_dir, "..", "..", "..", "..", "eduVid", "ocr_mistral", "ocr_text_recognition.py"
+                ))
+
+                # OCR-Modul importieren
+                ocr_module_spec = importlib.util.spec_from_file_location("ocr_text_recognition", ocr_file_path)
+                ocr_module = importlib.util.module_from_spec(ocr_module_spec)
+                ocr_module_spec.loader.exec_module(ocr_module)
+
+                # PDF oder Bild unterscheiden
+                if ext == ".pdf":
+                    with tempfile.TemporaryDirectory() as tmp_output:
+                        text_list = ocr_module.extract_text_from_pdf(tmp_path, tmp_output)
+                        response_text = "\n\n".join(text_list)
+                elif ext in [".jpg", ".jpeg", ".png"]:
+                    response_text = ocr_module.extract_text_from_image(tmp_path)
+                else:
+                    response_text = f"Nicht unterstützter Dateityp: {ext}"
+
+                print(f"DEBUG: OCR Ergebnis:\n{response_text}")
+
+                
+                mistral_script_path = os.path.normpath(os.path.join(
+                    current_dir, "..", "..", "..", "..", "eduVid", "ocr_mistral", "mistral_nextslide_text.py"
+                ))
+
+                mistral_spec = importlib.util.spec_from_file_location("mistral_nextslide_text", mistral_script_path)
+                mistral_module = importlib.util.module_from_spec(mistral_spec)
+                mistral_spec.loader.exec_module(mistral_module)
+
+               
+                mistral_module.User_input = response_text
+
+                # Erstellt nächste Slide
+                next_slide_text = mistral_module.generate_next_slide()
+
+              
+                json_script_path = os.path.normpath(os.path.join(
+                    current_dir, "..", "..", "..", "..", "eduVid", "ocr_mistral", "ocr_json_graph.py"
+                ))
+
+                json_spec = importlib.util.spec_from_file_location("ocr_json_graph", json_script_path)
+                json_module = importlib.util.module_from_spec(json_spec)
+                json_spec.loader.exec_module(json_module)
+
+                # JSON Erstellen
+                json_output = json_module.generate_json(next_slide_text)
+
+                return render_template("eduVid.html", form=form, answer_text=next_slide_text+"\n"+json_output)
+
+            except Exception as e:
+                error_msg = f"Fehler bei der JSON-Verarbeitung: {str(e)}"
+                print(error_msg)
+                return render_template("eduVid.html", form=form, answer_text=error_msg)
+
+        elif user_input:
+            return render_template("eduVid.html", form=form, answer_text=f"Du hast eingegeben: {user_input}")
+
     return render_template("eduVid.html", form=form)
 
 

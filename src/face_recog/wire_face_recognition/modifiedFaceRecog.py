@@ -24,7 +24,7 @@ def recogFace(im_data):
         except cv2.error as e:
             print(e)
             print("[Warning] Returning Wire Algo")
-            return
+            return []
 
     print("Loading train Images...")
     curDir = os.path.dirname(os.path.abspath(__file__))
