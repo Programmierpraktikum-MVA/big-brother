@@ -20,6 +20,7 @@ else:
     print("Warning: HUGGINGFACE_TOKEN environment variable not set. Some features may not work.")
 
 mistral_model_id = "mistralai/Mistral-7B-Instruct-v0.3"
+print(f"DEBUG: Loading model {mistral_model_id}...")
 
 bnb_config = BitsAndBytesConfig(
     load_in_4bit=True, 
@@ -28,8 +29,13 @@ bnb_config = BitsAndBytesConfig(
     bnb_4bit_quant_type="nf4",
     llm_int8_enable_fp32_cpu_offload=True
 )
+print("DEBUG: BitsAndBytesConfig created")
 
+print("DEBUG: Loading tokenizer...")
 mistral_tokenizer = AutoTokenizer.from_pretrained(mistral_model_id)
+print("DEBUG: Tokenizer loaded successfully")
+
+print("DEBUG: Loading model with quantization...")
 mistral_model = AutoModelForCausalLM.from_pretrained(
     mistral_model_id,
     quantization_config=bnb_config,  # Quantisierung aktivieren
@@ -37,7 +43,15 @@ mistral_model = AutoModelForCausalLM.from_pretrained(
     torch_dtype=torch.float16,
     low_cpu_mem_usage=True
 )
+print("DEBUG: Model loaded successfully")
+
+print("DEBUG: Compiling model...")
 mistral_model = torch.compile(mistral_model)
+print("DEBUG: Model compiled successfully")
+
+print(f"DEBUG: Model device: {mistral_model.device}")
+print(f"DEBUG: Model dtype: {mistral_model.dtype}")
+print(f"DEBUG: Available GPU memory: {torch.cuda.get_device_properties(0).total_memory / (1024**3):.1f} GB" if torch.cuda.is_available() else "DEBUG: No GPU available")
 
 User_input = ""
 
@@ -91,27 +105,64 @@ Jetzt gib die passende JSON-Ausgabe für diesen Text zurück:
 
 
 def generate_json(recognized_text):
-  
+    print(f"DEBUG: generate_json called with text: {recognized_text[:200]}...")
+    
     mistral_prompt = f"<s>[INST] {json_prompt.format(text_output=recognized_text)} [/INST]"
+    print(f"DEBUG: Mistral prompt length: {len(mistral_prompt)}")
+    
+    try:
+        print("DEBUG: Starting tokenization...")
+        inputs = mistral_tokenizer(mistral_prompt, return_tensors="pt").to(mistral_model.device)
+        print(f"DEBUG: Tokenization successful, input shape: {inputs['input_ids'].shape}")
+        
+        eos_token_id = mistral_tokenizer.eos_token_id
+        print(f"DEBUG: EOS token ID: {eos_token_id}")
 
-   
-    inputs = mistral_tokenizer(mistral_prompt, return_tensors="pt").to(mistral_model.device)
-
-    eos_token_id = mistral_tokenizer.eos_token_id
-
-    # JSON output
-    with torch.inference_mode():
-        output = mistral_model.generate(
-            **inputs,
-            max_new_tokens=1000,
-            do_sample=True,
-            temperature=0.7,
-            top_p=0.9,
-            eos_token_id=eos_token_id,
-            pad_token_id=eos_token_id
-        )
-
-  
-    json_output = mistral_tokenizer.decode(output[0], skip_special_tokens=True).replace(json_prompt, "").strip()
-    print(json_output)
-    return json_output
+        # JSON output
+        print("DEBUG: Starting model generation...")
+        start_time = torch.cuda.Event(enable_timing=True) if torch.cuda.is_available() else None
+        end_time = torch.cuda.Event(enable_timing=True) if torch.cuda.is_available() else None
+        
+        if start_time:
+            start_time.record()
+        
+        with torch.inference_mode():
+            output = mistral_model.generate(
+                **inputs,
+                max_new_tokens=1000,
+                do_sample=True,
+                temperature=0.7,
+                top_p=0.9,
+                eos_token_id=eos_token_id,
+                pad_token_id=eos_token_id
+            )
+        
+        if end_time and start_time:
+            end_time.record()
+            torch.cuda.synchronize()
+            elapsed_time = start_time.elapsed_time(end_time) / 1000.0  # Convert to seconds
+            print(f"DEBUG: Model generation took {elapsed_time:.2f} seconds")
+        else:
+            print("DEBUG: Model generation completed (timing not available)")
+            
+        print(f"DEBUG: Model generation completed, output shape: {output.shape}")
+        json_output = mistral_tokenizer.decode(output[0], skip_special_tokens=True)
+        
+        # Remove the original prompt from the output
+        if json_prompt in json_output:
+            json_output = json_output.replace(json_prompt.format(text_output=recognized_text), "").strip()
+        else:
+            # Fallback: remove everything before [/INST]
+            inst_end = json_output.find("[/INST]")
+            if inst_end != -1:
+                json_output = json_output[inst_end + 7:].strip()
+        
+        print(f"DEBUG: JSON output length: {len(json_output)}")
+        print(f"DEBUG: JSON output preview: {json_output[:200]}...")
+        return json_output
+        
+    except Exception as e:
+        print(f"ERROR in generate_json: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return f"{{\"error\": \"JSON generation failed: {str(e)}\"}}"

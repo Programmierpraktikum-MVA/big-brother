@@ -412,9 +412,11 @@ def eduVid():
                 json_spec.loader.exec_module(json_module)
 
                 # JSON Erstellen
+                print(f"DEBUG: Calling generate_json with text: {next_slide_text[:100]}...")
                 json_output = json_module.generate_json(next_slide_text)
+                print(f"DEBUG: generate_json returned: {json_output[:500]}...")
 
-                return render_template("eduVid.html", form=form, answer_text=next_slide_text+"\n"+json_output)
+                return render_template("eduVid.html", form=form, answer_text=next_slide_text+"\n\n=== JSON OUTPUT ===\n"+json_output)
 
             except Exception as e:
                 error_msg = f"Fehler bei der JSON-Verarbeitung: {str(e)}"
