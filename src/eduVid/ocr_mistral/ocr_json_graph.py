@@ -46,12 +46,39 @@ mistral_model = AutoModelForCausalLM.from_pretrained(
 print("DEBUG: Model loaded successfully")
 
 print("DEBUG: Compiling model...")
-mistral_model = torch.compile(mistral_model)
-print("DEBUG: Model compiled successfully")
+try:
+    mistral_model = torch.compile(mistral_model)
+    print("DEBUG: Model compiled successfully")
+except Exception as e:
+    print(f"DEBUG: Model compilation failed: {e}")
+    print("DEBUG: Continuing without compilation...")
 
 print(f"DEBUG: Model device: {mistral_model.device}")
 print(f"DEBUG: Model dtype: {mistral_model.dtype}")
 print(f"DEBUG: Available GPU memory: {torch.cuda.get_device_properties(0).total_memory / (1024**3):.1f} GB" if torch.cuda.is_available() else "DEBUG: No GPU available")
+
+# Test the model with a simple prompt
+print("DEBUG: Testing model with simple prompt...")
+try:
+    test_prompt = "<s>[INST] Hello, respond with 'Test successful' [/INST]"
+    test_inputs = mistral_tokenizer(test_prompt, return_tensors="pt").to(mistral_model.device)
+    with torch.inference_mode():
+        test_output = mistral_model.generate(
+            **test_inputs,
+            max_new_tokens=50,
+            do_sample=False,
+            temperature=0.1,
+            pad_token_id=mistral_tokenizer.eos_token_id
+        )
+    test_response = mistral_tokenizer.decode(test_output[0], skip_special_tokens=True)
+    print(f"DEBUG: Test response: {test_response}")
+    print("DEBUG: Model test completed successfully")
+except Exception as e:
+    print(f"DEBUG: Model test failed: {e}")
+    import traceback
+    traceback.print_exc()
+
+print("DEBUG: Mistral initialization complete. Ready for JSON generation.")
 
 User_input = ""
 
@@ -107,7 +134,7 @@ Jetzt gib die passende JSON-Ausgabe für diesen Text zurück:
 def generate_json(recognized_text):
     print(f"DEBUG: generate_json called with text: {recognized_text[:200]}...")
     
-    mistral_prompt = f"<s>[INST] {json_prompt.format(text_output=recognized_text)} [/INST]"
+    mistral_prompt = f"<s>[INST] {json_prompt.format(text_input=recognized_text)} [/INST]"
     print(f"DEBUG: Mistral prompt length: {len(mistral_prompt)}")
     
     try:
@@ -150,7 +177,7 @@ def generate_json(recognized_text):
         
         # Remove the original prompt from the output
         if json_prompt in json_output:
-            json_output = json_output.replace(json_prompt.format(text_output=recognized_text), "").strip()
+            json_output = json_output.replace(json_prompt.format(text_input=recognized_text), "").strip()
         else:
             # Fallback: remove everything before [/INST]
             inst_end = json_output.find("[/INST]")
