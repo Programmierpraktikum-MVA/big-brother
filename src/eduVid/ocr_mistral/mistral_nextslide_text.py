@@ -21,13 +21,21 @@ else:
 
 mistral_model_id = "mistralai/Mistral-7B-Instruct-v0.3"
 
-bnb_config = BitsAndBytesConfig(load_in_4bit=True, bnb_4bit_compute_dtype=torch.float16)
+bnb_config = BitsAndBytesConfig(
+    load_in_4bit=True, 
+    bnb_4bit_compute_dtype=torch.float16,
+    bnb_4bit_use_double_quant=True,
+    bnb_4bit_quant_type="nf4",
+    llm_int8_enable_fp32_cpu_offload=True
+)
 
 mistral_tokenizer = AutoTokenizer.from_pretrained(mistral_model_id)
 mistral_model = AutoModelForCausalLM.from_pretrained(
     mistral_model_id,
     quantization_config=bnb_config,  # Quantisierung aktivieren
     device_map="auto",
+    torch_dtype=torch.float16,
+    low_cpu_mem_usage=True
 )
 mistral_model = torch.compile(mistral_model)
 
