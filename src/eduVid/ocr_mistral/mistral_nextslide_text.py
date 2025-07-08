@@ -1,4 +1,4 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM, BitsAndBytesConfig
+from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 from langdetect import detect
 from dotenv import load_dotenv
@@ -21,23 +21,42 @@ else:
 
 mistral_model_id = "mistralai/Mistral-7B-Instruct-v0.3"
 
-bnb_config = BitsAndBytesConfig(
-    load_in_4bit=True, 
-    bnb_4bit_compute_dtype=torch.float16,
-    bnb_4bit_use_double_quant=True,
-    bnb_4bit_quant_type="nf4",
-    llm_int8_enable_fp32_cpu_offload=True
-)
+print("🔄 Lade Mistral Model ohne Quantisierung...")
 
 mistral_tokenizer = AutoTokenizer.from_pretrained(mistral_model_id)
-mistral_model = AutoModelForCausalLM.from_pretrained(
-    mistral_model_id,
-    quantization_config=bnb_config,  # Quantisierung aktivieren
-    device_map="auto",
-    torch_dtype=torch.float16,
-    low_cpu_mem_usage=True
-)
-mistral_model = torch.compile(mistral_model)
+
+# Load model without quantization
+try:
+    # Check if CUDA is available
+    if torch.cuda.is_available():
+        print(f"🎮 GPU verfügbar: {torch.cuda.get_device_name(0)}")
+        mistral_model = AutoModelForCausalLM.from_pretrained(
+            mistral_model_id,
+            torch_dtype=torch.float16,
+            device_map="auto",
+            low_cpu_mem_usage=True
+        )
+        print("✅ Model auf GPU geladen")
+    else:
+        print("💻 Nutze CPU")
+        mistral_model = AutoModelForCausalLM.from_pretrained(
+            mistral_model_id,
+            torch_dtype=torch.float32,
+            device_map="cpu",
+            low_cpu_mem_usage=True
+        )
+        print("✅ Model auf CPU geladen")
+        
+    # Model compilation (optional)
+    try:
+        mistral_model = torch.compile(mistral_model)
+        print("✅ Model compilation erfolgreich")
+    except Exception as e:
+        print(f"⚠️  Model compilation übersprungen: {e}")
+        
+except Exception as e:
+    print(f"❌ Fehler beim Laden des Models: {e}")
+    mistral_model = None
 
 User_input = ""
 
@@ -86,31 +105,43 @@ Generiere die logische nächste Folie.[/INST]"""
 
 def generate_next_slide(recognized_text):
     global mistral_tokenizer, mistral_model
-
     
-    detected_language = detect(recognized_text)
+    if mistral_model is None:
+        return "Fehler: Mistral Model konnte nicht geladen werden."
 
-   
-    if detected_language == "de":
-        mistral_prompt = mistral_prompt_de.format(User_input=recognized_text)
-    else:
-        mistral_prompt = mistral_prompt_eng.format(User_input=recognized_text)
+    try:
+        detected_language = detect(recognized_text)
 
-   
-    inputs = mistral_tokenizer(mistral_prompt, return_tensors="pt").to(mistral_model.device)
+        if detected_language == "de":
+            mistral_prompt = mistral_prompt_de.format(User_input=recognized_text)
+        else:
+            mistral_prompt = mistral_prompt_eng.format(User_input=recognized_text)
 
-    output = mistral_model.generate(
-        **inputs,
-        max_new_tokens=250,
-        temperature=0.7,
-        top_p=0.9,
-        do_sample=True,
-        pad_token_id=mistral_tokenizer.eos_token_id
-    )
+        # Input preparation
+        inputs = mistral_tokenizer(mistral_prompt, return_tensors="pt", truncation=True, max_length=2048)
+        
+        # Move inputs to same device as model
+        inputs = {k: v.to(mistral_model.device) for k, v in inputs.items()}
 
-    
-    text_output = mistral_tokenizer.decode(output[0], skip_special_tokens=True)
-    return text_output
+        # Generate text
+        with torch.no_grad():
+            output = mistral_model.generate(
+                **inputs,
+                max_new_tokens=250,
+                temperature=0.7,
+                top_p=0.9,
+                do_sample=True,
+                pad_token_id=mistral_tokenizer.eos_token_id,
+                use_cache=True
+            )
+
+        # Decode output
+        text_output = mistral_tokenizer.decode(output[0], skip_special_tokens=True)
+        return text_output
+        
+    except Exception as e:
+        print(f"❌ Fehler bei der Text-Generation: {e}")
+        return f"Fehler bei der JSON-Verarbeitung: {str(e)}"
 
 # Chat-Instruct-Format: <s>[INST]...[/INST]
 # Tokenisieren
