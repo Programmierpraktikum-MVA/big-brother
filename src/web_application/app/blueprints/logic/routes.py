@@ -391,8 +391,16 @@ def eduVid():
                 print(f"DEBUG: OCR Ergebnis:\n{response_text}")
 
                 # Direkte Imports verwenden statt dynamische Imports
-                from eduVid.ocr_mistral import mistral_nextslide_text as mistral_module
-                from eduVid.ocr_mistral import ocr_json_graph as json_module
+                import sys
+                import os
+                
+                # Füge src-Verzeichnis zu sys.path hinzu für korrekte Paket-Imports
+                src_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
+                if src_path not in sys.path:
+                    sys.path.insert(0, src_path)
+                
+                from src.eduVid.ocr_mistral import mistral_nextslide_text as mistral_module
+                from src.eduVid.ocr_mistral import ocr_json_graph as json_module
 
                 # Erstellt nächste Slide - KORRIGIERT: Übergebe response_text als Argument
                 next_slide_text = mistral_module.generate_next_slide(response_text)
