@@ -396,11 +396,8 @@ def eduVid():
                 mistral_module = importlib.util.module_from_spec(mistral_spec)
                 mistral_spec.loader.exec_module(mistral_module)
 
-               
-                mistral_module.User_input = response_text
-
-                # Erstellt nächste Slide
-                next_slide_text = mistral_module.generate_next_slide()
+                # Erstellt nächste Slide - KORRIGIERT: Übergebe response_text als Argument
+                next_slide_text = mistral_module.generate_next_slide(response_text)
 
               
                 json_script_path = os.path.normpath(os.path.join(

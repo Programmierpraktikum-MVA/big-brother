@@ -1,103 +1,16 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
-from langdetect import detect
-from dotenv import load_dotenv
-import os
+"""
+Optimized OCR JSON Graph Generation with Shared Mistral Model
+Uses singleton pattern to prevent multiple model loading
+"""
 
-# Load environment variables from .env.local file
-script_dir = os.path.dirname(os.path.abspath(__file__))
-env_path = os.path.join(script_dir, "env.local")
-load_dotenv(dotenv_path=env_path)
+from shared_mistral import get_mistral_manager
+import json
 
-# ========== Mistral ==========
-print("\n=== Mistral (Mistral-7B-Instruct-v0.3) ===")
-from huggingface_hub import login
+# Lade das shared Mistral Model (Singleton)
+print("Verbinde mit shared Mistral Manager...")
+mistral_manager = get_mistral_manager()
 
-# Use environment variable for the token
-hf_token = os.getenv("HUGGINGFACE_TOKEN")
-if hf_token:
-    login(hf_token)
-    print("Login erfolgreich.")
-else:
-    print("Warning: HUGGINGFACE_TOKEN environment variable not set. Some features may not work.")
-
-mistral_model_id = "mistralai/Mistral-7B-Instruct-v0.3"
-print(f"DEBUG: Loading model {mistral_model_id}...")
-
-print("DEBUG: Loading tokenizer...")
-mistral_tokenizer = AutoTokenizer.from_pretrained(mistral_model_id)
-print("DEBUG: Tokenizer loaded successfully")
-
-print("DEBUG: Loading model without quantization...")
-try:
-    # Check if CUDA is available
-    if torch.cuda.is_available():
-        print(f"🎮 GPU verfügbar: {torch.cuda.get_device_name(0)}")
-        mistral_model = AutoModelForCausalLM.from_pretrained(
-            mistral_model_id,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            low_cpu_mem_usage=True
-        )
-        print("✅ Model auf GPU geladen")
-    else:
-        print("💻 Nutze CPU")
-        mistral_model = AutoModelForCausalLM.from_pretrained(
-            mistral_model_id,
-            torch_dtype=torch.float32,
-            device_map="cpu",
-            low_cpu_mem_usage=True
-        )
-        print("✅ Model auf CPU geladen")
-        
-    print("DEBUG: Model loaded successfully")
-    
-except Exception as e:
-    print(f"❌ Fehler beim Laden des Models: {e}")
-    mistral_model = None
-
-print("DEBUG: Compiling model...")
-if mistral_model is not None:
-    try:
-        mistral_model = torch.compile(mistral_model)
-        print("DEBUG: Model compiled successfully")
-    except Exception as e:
-        print(f"DEBUG: Model compilation failed: {e}")
-        print("DEBUG: Continuing without compilation...")
-
-    print(f"DEBUG: Model device: {mistral_model.device}")
-    print(f"DEBUG: Model dtype: {mistral_model.dtype}")
-    print(f"DEBUG: Available GPU memory: {torch.cuda.get_device_properties(0).total_memory / (1024**3):.1f} GB" if torch.cuda.is_available() else "DEBUG: No GPU available")
-
-    # Test the model with a simple prompt
-    print("DEBUG: Testing model with simple prompt...")
-    try:
-        test_prompt = "<s>[INST] Hello, respond with 'Test successful' [/INST]"
-        test_inputs = mistral_tokenizer(test_prompt, return_tensors="pt").to(mistral_model.device)
-        with torch.inference_mode():
-            test_output = mistral_model.generate(
-                **test_inputs,
-                max_new_tokens=50,
-                do_sample=False,
-                temperature=0.1,
-                pad_token_id=mistral_tokenizer.eos_token_id
-            )
-        test_response = mistral_tokenizer.decode(test_output[0], skip_special_tokens=True)
-        print(f"DEBUG: Test response: {test_response}")
-        print("DEBUG: Model test completed successfully")
-    except Exception as e:
-        print(f"DEBUG: Model test failed: {e}")
-        import traceback
-        traceback.print_exc()
-
-    print("DEBUG: Mistral initialization complete. Ready for JSON generation.")
-else:
-    print("❌ Model konnte nicht geladen werden. JSON-Generation nicht verfügbar.")
-
-User_input = ""
-
-# === Prompt-Vorlage ===
-### JSON
+# JSON Prompt Template
 json_prompt = """### Instruction:
 Du bist ein JSON-Assistent.
 
@@ -121,18 +34,11 @@ Formatvorgabe (bitte exakt einhalten):
 Vorgehen:
 1. Analysiere die Begriffe oder Konzepte aus dem Text → diese werden zu "nodes".
 2. Erkenne sinnvolle Beziehungen oder Aktionen zwischen diesen Begriffen → diese werden zu "edges" mit passenden "labels".
-3. Verwende **nur Verbindungen mit semantischem oder funktionalem Zusammenhang**, z. B. „verwendet“, „basiert auf“, „wird trainiert mit“, etc.
+3. Verwende **nur Verbindungen mit semantischem oder funktionalem Zusammenhang**, z. B. „verwendet", „basiert auf", „wird trainiert mit", etc.
 
 Wichtig:
 - Gib nur gültiges JSON zurück, keine Erklärungen oder zusätzlichen Kommentare.
 - Gib nicht überall automatisch ein Label an – entscheide pro Beziehung.
-- **KEINE** Labels, die nur Aufzählungen, Beispiele oder Kategorien ausdrücken.
-- **KEINE** Labels wie:
-  - "example", "examples", "application", "applications"
-  - "type", "types", "category", "subcategory"
-  - "component", "instance", "variant", "form", "case"
-- Verwende nur Labels, die im Text durch ein **Verhalten**, **Zweck**, **Ablauf** oder **Zusammenhang** angedeutet sind.
-- Bloße Kategorisierungen oder Beispiele sollen **nicht** mit Labeln versehen werden. Ansonsten gib ein Label zur Kante.
 - Alle Knoten und Verbindungen müssen sinnvoll und aus dem Text ableitbar sein.
 - Schreibe Begriffe und Konzepte mit normalen Leerzeichen, nicht mit Unterstrichen (_).
 - Beginne Knotenbezeichner und Labels mit Großbuchstaben.
@@ -146,54 +52,163 @@ Jetzt gib die passende JSON-Ausgabe für diesen Text zurück:
 
 
 def generate_json(recognized_text):
-    print(f"DEBUG: generate_json called with text: {recognized_text[:200]}...")
+    """
+    Generiert JSON aus OCR-Text mit dem shared Mistral-Modell
+    """
+    print(f"JSON-Generierung gestartet für Text: {recognized_text[:100]}...")
     
-    if mistral_model is None:
-        return '{"error": "Mistral Model nicht geladen"}'
-    
-    mistral_prompt = f"<s>[INST] {json_prompt.format(text_input=recognized_text)} [/INST]"
-    print(f"DEBUG: Mistral prompt length: {len(mistral_prompt)}")
+    # Prüfe, ob das Mistral-Modell verfügbar ist
+    if not mistral_manager.is_available:
+        print("Mistral-Modell nicht verfügbar - verwende Fallback")
+        return create_fallback_json(recognized_text)
     
     try:
-        print("DEBUG: Starting tokenization...")
-        inputs = mistral_tokenizer(mistral_prompt, return_tensors="pt", truncation=True, max_length=2048)
+        # Erstelle den vollständigen Prompt
+        full_prompt = f"<s>[INST] {json_prompt.format(text_input=recognized_text)} [/INST]"
+        print(f"Prompt-Länge: {len(full_prompt)} Zeichen")
         
-        # Move inputs to same device as model
-        inputs = {k: v.to(mistral_model.device) for k, v in inputs.items()}
-        print(f"DEBUG: Tokenization successful, input shape: {inputs['input_ids'].shape}")
+        # Zeige Speicherverbrauch vor der Generierung
+        memory_info = mistral_manager.get_memory_usage()
+        if 'allocated_gb' in memory_info:
+            print(f"GPU Speicher: {memory_info['allocated_gb']:.1f} GB verwendet")
         
-        eos_token_id = mistral_tokenizer.eos_token_id
-        print(f"DEBUG: EOS token ID: {eos_token_id}")
-
-        # JSON output
-        print("DEBUG: Starting model generation...")
+        # Generiere mit dem shared Manager (schnellere Einstellungen)
+        print("Starte Mistral-Generierung...")
+        json_output = mistral_manager.generate_text(
+            prompt=full_prompt,
+            max_new_tokens=400,  # Reduziert für schnellere Generierung
+            temperature=0.3,     # Deterministischer
+            top_p=0.8           # Fokussiertere Ausgaben
+        )
         
-        with torch.no_grad():
-            output = mistral_model.generate(
-                **inputs,
-                max_new_tokens=1000,
-                do_sample=True,
-                temperature=0.7,
-                top_p=0.9,
-                eos_token_id=eos_token_id,
-                pad_token_id=eos_token_id,
-                use_cache=True
-            )
-            
-        print(f"DEBUG: Model generation completed, output shape: {output.shape}")
-        json_output = mistral_tokenizer.decode(output[0], skip_special_tokens=True)
+        # Bereinige die Ausgabe
+        json_output = clean_json_output(json_output)
         
-        # Remove the original prompt from the output
-        inst_end = json_output.find("[/INST]")
-        if inst_end != -1:
-            json_output = json_output[inst_end + 7:].strip()
+        print(f"JSON generiert ({len(json_output)} Zeichen)")
+        print(f"Preview: {json_output[:150]}...")
         
-        print(f"DEBUG: JSON output length: {len(json_output)}")
-        print(f"DEBUG: JSON output preview: {json_output[:200]}...")
-        return json_output
+        # Validiere das JSON
+        try:
+            parsed = json.loads(json_output)
+            nodes_count = len(parsed.get('nodes', []))
+            edges_count = len(parsed.get('edges', []))
+            print(f"JSON ist valide (Nodes: {nodes_count}, Edges: {edges_count})")
+            return json_output
+        except json.JSONDecodeError as e:
+            print(f"JSON ist nicht valide: {e}")
+            print(f"Versuche Fallback-JSON...")
+            return create_fallback_json(recognized_text)
         
     except Exception as e:
-        print(f"ERROR in generate_json: {str(e)}")
+        print(f"Fehler bei JSON-Generierung: {str(e)}")
         import traceback
         traceback.print_exc()
-        return f'{{"error": "JSON generation failed: {str(e)}"}}'
+        return create_fallback_json(recognized_text)
+
+
+def clean_json_output(raw_output):
+    """
+    Bereinigt die Mistral-Ausgabe und extrahiert nur das JSON
+    """
+    try:
+        # Entferne eventuelle Präfixe
+        if "[/INST]" in raw_output:
+            json_part = raw_output.split("[/INST]")[-1].strip()
+        else:
+            json_part = raw_output.strip()
+        
+        # Finde den JSON-Teil (zwischen ersten { und letzten })
+        start_idx = json_part.find('{')
+        end_idx = json_part.rfind('}')
+        
+        if start_idx != -1 and end_idx != -1 and end_idx > start_idx:
+            json_part = json_part[start_idx:end_idx+1]
+            return json_part
+        
+        # Fallback: return original if no JSON structure found
+        return json_part
+        
+    except Exception as e:
+        print(f"Fehler beim Bereinigen der JSON-Ausgabe: {e}")
+        return raw_output
+
+
+def create_fallback_json(text):
+    """
+    Erstellt ein einfaches JSON-Fallback basierend auf dem Text
+    """
+    print("Erstelle Fallback-JSON...")
+    
+    try:
+        # Einfache Keyword-Extraktion
+        words = text.replace(',', ' ').replace('.', ' ').replace('&', ' ').split()
+        important_words = [word.strip('.,;:!?-') for word in words if len(word) > 3]
+        
+        # Entferne Duplikate und nehme die ersten 6
+        unique_words = list(dict.fromkeys(important_words))[:6]
+        
+        # Erstelle Nodes
+        nodes = [{"id": word.capitalize()} for word in unique_words]
+        
+        # Erstelle einfache Verbindungen
+        edges = []
+        for i in range(len(unique_words) - 1):
+            edges.append({
+                "from": unique_words[i].capitalize(),
+                "to": unique_words[i + 1].capitalize()
+            })
+        
+        # Falls genug Begriffe vorhanden, erstelle auch thematische Verbindungen
+        if len(unique_words) >= 4:
+            edges.append({
+                "from": unique_words[0].capitalize(),
+                "to": unique_words[-1].capitalize(),
+                "label": "gehört zu"
+            })
+        
+        fallback_json = {
+            "nodes": nodes,
+            "edges": edges
+        }
+        
+        result = json.dumps(fallback_json, ensure_ascii=False, indent=2)
+        print(f"Fallback-JSON erstellt mit {len(nodes)} Nodes und {len(edges)} Edges")
+        return result
+        
+    except Exception as e:
+        print(f"Fehler beim Erstellen des Fallback-JSON: {e}")
+        return '{"nodes": [{"id": "Error"}], "edges": []}'
+
+
+def get_model_status():
+    """
+    Gibt den Status des Mistral-Modells zurück
+    """
+    if mistral_manager.is_available:
+        memory_info = mistral_manager.get_memory_usage()
+        return {
+            "status": "available",
+            "memory": memory_info
+        }
+    else:
+        return {
+            "status": "not_available",
+            "message": "Mistral-Modell nicht geladen"
+        }
+
+
+def quick_test():
+    """
+    Schneller Test der JSON-Generierung
+    """
+    test_text = "Machine Learning Algorithmus Training Dataset Evaluation"
+    print("Teste JSON-Generierung...")
+    result = generate_json(test_text)
+    print(f"Test-Ergebnis: {result}")
+    return result
+
+
+if __name__ == "__main__":
+    print("OCR JSON Graph Generator mit Shared Mistral")
+    print(f"Model Status: {get_model_status()}")
+    quick_test()

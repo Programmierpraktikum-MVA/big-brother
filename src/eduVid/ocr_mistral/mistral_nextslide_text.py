@@ -1,68 +1,17 @@
-from transformers import AutoTokenizer, AutoModelForCausalLM
-import torch
+from shared_mistral import get_mistral_manager
 from langdetect import detect
-from dotenv import load_dotenv
-import os
+import torch
 
-# Load environment variables from .env.local file
-load_dotenv(dotenv_path="env.local")
+print("Mistral Slide Generator (Shared Model)")
 
-# ========== Mistral ==========
-print("\n=== Mistral (Mistral-7B-Instruct-v0.3) ===")
-from huggingface_hub import login
-
-# Use environment variable for the token
-hf_token = os.getenv("HUGGINGFACE_TOKEN")
-if hf_token:
-    login(hf_token)
-    print("Login erfolgreich.")
-else:
-    print("Warning: HUGGINGFACE_TOKEN environment variable not set. Some features may not work.")
-
-mistral_model_id = "mistralai/Mistral-7B-Instruct-v0.3"
-
-print("🔄 Lade Mistral Model ohne Quantisierung...")
-
-mistral_tokenizer = AutoTokenizer.from_pretrained(mistral_model_id)
-
-# Load model without quantization
-try:
-    # Check if CUDA is available
-    if torch.cuda.is_available():
-        print(f"🎮 GPU verfügbar: {torch.cuda.get_device_name(0)}")
-        mistral_model = AutoModelForCausalLM.from_pretrained(
-            mistral_model_id,
-            torch_dtype=torch.float16,
-            device_map="auto",
-            low_cpu_mem_usage=True
-        )
-        print("✅ Model auf GPU geladen")
-    else:
-        print("💻 Nutze CPU")
-        mistral_model = AutoModelForCausalLM.from_pretrained(
-            mistral_model_id,
-            torch_dtype=torch.float32,
-            device_map="cpu",
-            low_cpu_mem_usage=True
-        )
-        print("✅ Model auf CPU geladen")
-        
-    # Model compilation (optional)
-    try:
-        mistral_model = torch.compile(mistral_model)
-        print("✅ Model compilation erfolgreich")
-    except Exception as e:
-        print(f"⚠️  Model compilation übersprungen: {e}")
-        
-except Exception as e:
-    print(f"❌ Fehler beim Laden des Models: {e}")
-    mistral_model = None
+# Lade das shared Mistral Model (Singleton)
+mistral_manager = get_mistral_manager()
 
 User_input = ""
 
 # === Prompt-Vorlage ===
 ### Englisch
-mistral_prompt_eng = f"""### Instruction:
+mistral_prompt_eng = """### Instruction:
 You are helping create lecture slides from outlines.
 
 Each slide contains 3–5 informative bullet points in english language.
@@ -82,7 +31,7 @@ Generate the logical next slide."""
 
 
 ### Deutsch
-mistral_prompt_de = f"""<s>[INST]### Instruction:
+mistral_prompt_de = """<s>[INST]### Instruction:
 Du hilfst bei der Erstellung von Vorlesungsfolien.
 Du sollst nur die neu erstellten Stichpunkte zurückgeben. Gib **nicht** die gegebenen Inhalte wieder.
 
@@ -104,59 +53,59 @@ Generiere die logische nächste Folie.[/INST]"""
 
 
 def generate_next_slide(recognized_text):
-    global mistral_tokenizer, mistral_model
+    print(f"Generiere nächste Folie für: {recognized_text[:100]}...")
+    print(f"Mistral Manager verfügbar: {mistral_manager.is_available}")
     
-    if mistral_model is None:
-        return "Fehler: Mistral Model konnte nicht geladen werden."
+    if not mistral_manager.is_available:
+        return "Fehler: Mistral Model nicht verfügbar."
 
     try:
+        # Sprache erkennen
         detected_language = detect(recognized_text)
+        print(f"Erkannte Sprache: {detected_language}")
 
         if detected_language == "de":
-            mistral_prompt = mistral_prompt_de.format(User_input=recognized_text)
+            prompt = mistral_prompt_de.format(User_input=recognized_text)
         else:
-            mistral_prompt = mistral_prompt_eng.format(User_input=recognized_text)
+            prompt = mistral_prompt_eng.format(User_input=recognized_text)
 
-        # Input preparation
-        inputs = mistral_tokenizer(mistral_prompt, return_tensors="pt", truncation=True, max_length=2048)
+        # Verwende den shared manager für die Generierung
+        text_output = mistral_manager.generate_text(
+            prompt=prompt,
+            max_new_tokens=250,
+            temperature=0.7,
+            top_p=0.9
+        )
         
-        # Move inputs to same device as model
-        inputs = {k: v.to(mistral_model.device) for k, v in inputs.items()}
-
-        # Generate text
-        with torch.no_grad():
-            output = mistral_model.generate(
-                **inputs,
-                max_new_tokens=250,
-                temperature=0.7,
-                top_p=0.9,
-                do_sample=True,
-                pad_token_id=mistral_tokenizer.eos_token_id,
-                use_cache=True
-            )
-
-        # Decode output
-        text_output = mistral_tokenizer.decode(output[0], skip_special_tokens=True)
+        if text_output.startswith("Fehler"):
+            return f"Fehler bei der Generierung: {text_output}"
+        
+        print(f"Folie generiert (Länge: {len(text_output)})")
         return text_output
         
     except Exception as e:
-        print(f"❌ Fehler bei der Text-Generation: {e}")
-        return f"Fehler bei der JSON-Verarbeitung: {str(e)}"
+        print(f"Fehler bei der Folien-Generation: {e}")
+        import traceback
+        traceback.print_exc()
+        return f"Fehler bei der Text-Generation: {str(e)}"
 
-# Chat-Instruct-Format: <s>[INST]...[/INST]
-# Tokenisieren
-#inputs = mistral_tokenizer(mistral_prompt, return_tensors="pt").to(mistral_model.device)
 
-# Text generieren
-#output = mistral_model.generate(
-    #**inputs,
-    #max_new_tokens=250,
-    #temperature=0.7,
-    #top_p=0.9,
-    #do_sample=True,
-    #pad_token_id=mistral_tokenizer.eos_token_id
-#)
+def test_slide_generation():
+    """Test-Funktion für die Folien-Generierung"""
+    test_input = """
+    - Grundlagen der Programmiersprache Python
+    - Variablen und Datentypen in Python
+    - Einfache Ein- und Ausgabe-Operationen
+    - Erste Programme mit print() und input()
+    """
+    
+    print("Teste Folien-Generierung...")
+    result = generate_next_slide(test_input)
+    print("Generierte Folie:")
+    print("-" * 40)
+    print(result)
+    print("-" * 40)
 
-# Ausgabe dekodieren
-#text_output = mistral_tokenizer.decode(output[0], skip_special_tokens=True)#.replace(text_prompt, "").strip()
-#print(text_output)##
+
+if __name__ == "__main__":
+    test_slide_generation()
