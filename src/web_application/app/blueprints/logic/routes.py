@@ -22,6 +22,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "gesture_recognition/user_scripts"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid/vector_search"))
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid/ocr_mistral"))
+# Add src directory to path for proper package imports
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
 available_courses_json = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid", "scrapers", "video_scrapers", "available_courses.json")
 configure_json = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid", "config.json")
 
@@ -387,26 +390,12 @@ def eduVid():
 
                 print(f"DEBUG: OCR Ergebnis:\n{response_text}")
 
-                
-                mistral_script_path = os.path.normpath(os.path.join(
-                    current_dir, "..", "..", "..", "..", "eduVid", "ocr_mistral", "mistral_nextslide_text.py"
-                ))
-
-                mistral_spec = importlib.util.spec_from_file_location("mistral_nextslide_text", mistral_script_path)
-                mistral_module = importlib.util.module_from_spec(mistral_spec)
-                mistral_spec.loader.exec_module(mistral_module)
+                # Direkte Imports verwenden statt dynamische Imports
+                from eduVid.ocr_mistral import mistral_nextslide_text as mistral_module
+                from eduVid.ocr_mistral import ocr_json_graph as json_module
 
                 # Erstellt nächste Slide - KORRIGIERT: Übergebe response_text als Argument
                 next_slide_text = mistral_module.generate_next_slide(response_text)
-
-              
-                json_script_path = os.path.normpath(os.path.join(
-                    current_dir, "..", "..", "..", "..", "eduVid", "ocr_mistral", "ocr_json_graph.py"
-                ))
-
-                json_spec = importlib.util.spec_from_file_location("ocr_json_graph", json_script_path)
-                json_module = importlib.util.module_from_spec(json_spec)
-                json_spec.loader.exec_module(json_module)
 
                 # JSON Erstellen
                 print(f"DEBUG: Calling generate_json with text: {next_slide_text[:100]}...")

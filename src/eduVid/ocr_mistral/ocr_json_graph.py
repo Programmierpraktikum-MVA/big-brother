@@ -3,7 +3,7 @@ Optimized OCR JSON Graph Generation with Shared Mistral Model
 Uses singleton pattern to prevent multiple model loading
 """
 
-from shared_mistral import get_mistral_manager
+from .shared_mistral import get_mistral_manager
 import json
 
 # Lade das shared Mistral Model (Singleton)

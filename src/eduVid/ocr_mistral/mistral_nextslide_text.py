@@ -1,4 +1,4 @@
-from shared_mistral import get_mistral_manager
+from .shared_mistral import get_mistral_manager
 from langdetect import detect
 import torch
 
