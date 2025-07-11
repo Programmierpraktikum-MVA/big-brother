@@ -64,7 +64,7 @@ class MistralModelManager:
             print(f"Lade Tokenizer: {model_id}")
             self._tokenizer = AutoTokenizer.from_pretrained(
                 model_id,
-                #local_files_only=True
+                local_files_only=True
             )
             print("Tokenizer geladen")
             
@@ -90,7 +90,7 @@ class MistralModelManager:
                     device_map="auto",
                     #low_cpu_mem_usage=True,
                     #torch_dtype=torch.float16,
-                    #local_files_only=True
+                    local_files_only=True
                 )
                 print("Modell auf GPU geladen (4-Bit quantisiert)")
             else:
