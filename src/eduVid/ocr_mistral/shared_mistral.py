@@ -25,17 +25,17 @@ class MistralModelManager:
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = super(MistralModelManager, cls).__new__(cls)
+                    cls._instance = super().__new__(cls) #super(MistralModelManager, cls).__new__(cls)
+                    cls._instance._load_model()
+                    cls._initialized = True
         return cls._instance
     
-    def __init__(self):
+    #def __init__(self):
         # Nur einmal initialisieren
-        if not self._initialized:
-            with self._lock:
+        #if not self._initialized:
+            #with self._lock:
                 #if not self._initialized:
-                if not MistralModelManager._initialized:
-                    self._load_model()
-                    MistralModelManager._initialized = True
+                    #self._load_model()
                     #self._initialized = True
     
     def _load_model(self):
