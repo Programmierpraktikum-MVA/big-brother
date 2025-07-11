@@ -64,7 +64,7 @@ class MistralModelManager:
             print(f"Lade Tokenizer: {model_id}")
             self._tokenizer = AutoTokenizer.from_pretrained(
                 model_id,
-                local_files_only=True
+                #local_files_only=True
             )
             print("Tokenizer geladen")
             
@@ -79,18 +79,18 @@ class MistralModelManager:
                 print("Konfiguriere 4-Bit Quantisierung (NF4)...")
                 bnb_config = BitsAndBytesConfig(
                     load_in_4bit=True,
-                    bnb_4bit_quant_type="nf4",
+                    #bnb_4bit_quant_type="nf4",
                     bnb_4bit_compute_dtype=torch.float16,
-                    bnb_4bit_use_double_quant=True,
+                    #bnb_4bit_use_double_quant=True,
                 )
                 
                 self._model = AutoModelForCausalLM.from_pretrained(
                     model_id,
                     quantization_config=bnb_config,
                     device_map="auto",
-                    low_cpu_mem_usage=True,
-                    torch_dtype=torch.float16,
-                    local_files_only=True
+                    #low_cpu_mem_usage=True,
+                    #torch_dtype=torch.float16,
+                    #local_files_only=True
                 )
                 print("Modell auf GPU geladen (4-Bit quantisiert)")
             else:
