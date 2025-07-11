@@ -32,9 +32,11 @@ class MistralModelManager:
         # Nur einmal initialisieren
         if not self._initialized:
             with self._lock:
-                if not self._initialized:
+                #if not self._initialized:
+                if not MistralModelManager._initialized:
                     self._load_model()
-                    self._initialized = True
+                    MistralModelManager._initialized = True
+                    #self._initialized = True
     
     def _load_model(self):
         """Lädt das Mistral-Modell einmalig"""
