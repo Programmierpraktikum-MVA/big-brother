@@ -1,9 +1,5 @@
 from flask_wtf import FlaskForm
-<<<<<<< HEAD
-from wtforms import TextField, SubmitField
-=======
 from wtforms import StringField, SubmitField
->>>>>>> EduVids-Completing
 from flask_wtf.file import FileAllowed, FileField, FileRequired
 from wtforms.validators import DataRequired, StopValidation
 
@@ -32,11 +28,7 @@ class UsernameExistsInDatabase(object):
 
 
 class LoginForm(FlaskForm):
-<<<<<<< HEAD
-    name = TextField(
-=======
     name = StringField(
->>>>>>> EduVids-Completing
         "Name:",
         validators=[
             DataRequired(),
@@ -47,11 +39,7 @@ class LoginForm(FlaskForm):
 
 
 class CameraLoginForm(FlaskForm):
-<<<<<<< HEAD
-    name = TextField(
-=======
     name = StringField(
->>>>>>> EduVids-Completing
         'Name:', validators=[
             DataRequired(),
             UsernameExistsInDatabase(),

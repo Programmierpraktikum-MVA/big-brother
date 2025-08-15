@@ -42,19 +42,11 @@ user_manager = UserManager()
 
 
 from app.blueprints.main.routes import main
-<<<<<<< HEAD
 from app.blueprints.logic.routes import logic
-=======
-from app.blueprints.logic.routes import logic # Der Blueprint wird als 'logic' importiert
->>>>>>> EduVids-Completing
 from app.blueprints.users.routes import users
 from app.blueprints.login.routes import blueprint_login
 
 application.register_blueprint(main)
-<<<<<<< HEAD
 application.register_blueprint(logic)
-=======
-application.register_blueprint(logic)         # und hier registriert
->>>>>>> EduVids-Completing
 application.register_blueprint(users)
 application.register_blueprint(blueprint_login)

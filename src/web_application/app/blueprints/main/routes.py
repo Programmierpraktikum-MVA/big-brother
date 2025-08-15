@@ -25,13 +25,10 @@ def team2():
 def team3():
     return render_template("team24.html")
 
-<<<<<<< HEAD
-=======
 @main.route("/team25")
 def team4():
     return render_template("team25.html")
 
->>>>>>> EduVids-Completing
 @main.route("/algorithms")
 def algorithms():
     return render_template("algorithms.html")

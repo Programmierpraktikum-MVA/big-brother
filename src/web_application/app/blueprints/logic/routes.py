@@ -2,10 +2,7 @@ import os
 import sys
 import io
 import json
-<<<<<<< HEAD
-=======
 import importlib.util
->>>>>>> EduVids-Completing
 from datetime import datetime, timedelta
 
 from flask import (render_template, request, Blueprint, url_for, send_from_directory, redirect, Response, jsonify)
@@ -25,12 +22,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "gesture_recognition/user_scripts"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid/vector_search"))
-<<<<<<< HEAD
-=======
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid/ocr_mistral"))
 # Add src directory to path for proper package imports
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
->>>>>>> EduVids-Completing
 available_courses_json = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid", "scrapers", "video_scrapers", "available_courses.json")
 configure_json = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid", "config.json")
 
@@ -38,13 +32,9 @@ from app.blueprints.logic.forms import VideoUploadForm, QueryForm
 from app import application, socketio
 
 from gesture_recognizer import GestureRecognizer
-<<<<<<< HEAD
-import question_answering.qa_algo_core as qa
-=======
 # import question_answering.qa_algo_core as qa  # DISABLED - Llama 4 nicht mehr laden
 
 import Graphing.Graphing as gr
->>>>>>> EduVids-Completing
 
 from base_database import BaseDatabase
 from lua_sandbox_runner import run_lua_in_sandbox

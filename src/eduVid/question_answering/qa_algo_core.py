@@ -1,10 +1,4 @@
 from moviepy.video.io.VideoFileClip import VideoFileClip
-<<<<<<< HEAD
-from transformers import AutoTokenizer, AutoModelForQuestionAnswering
-import torch
-from faster_whisper import WhisperModel
-
-=======
 
 import transformers
 from transformers import AutoTokenizer, AutoModelForQuestionAnswering, pipeline
@@ -15,7 +9,6 @@ from faster_whisper import WhisperModel
 from huggingface_hub import login
 login("KEY")
 
->>>>>>> EduVids-Completing
 
 class HelperFN:
     """

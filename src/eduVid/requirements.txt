@@ -15,9 +15,6 @@ llama_index
 llama_parse
 sentence_transformers
 matplotlib
-<<<<<<< HEAD
-=======
 python-dotenv
->>>>>>> EduVids-Completing
 
 pygame

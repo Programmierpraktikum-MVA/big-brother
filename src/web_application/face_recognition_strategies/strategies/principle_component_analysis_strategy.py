@@ -37,14 +37,11 @@ class PCAStrategy(BaseStrategy):
         otherwise.
         """
         recog_usernames = recogFace([testing_data, self.user_uuid])
-<<<<<<< HEAD
-=======
         
         # Check if recog_usernames is None or empty
         if recog_usernames is None:
             return False
         
->>>>>>> EduVids-Completing
         return self.username in recog_usernames
 
     def preprocess_data(self, training_data, testing_data):
