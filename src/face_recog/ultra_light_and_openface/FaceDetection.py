@@ -4,7 +4,10 @@ import numpy as np
 from numpy.linalg import norm
 import onnx
 import onnxruntime as ort
+<<<<<<< HEAD
 from onnx_tf.backend import prepare
+=======
+>>>>>>> EduVids-Completing
 import os, sys
 import dlib
 from imutils import face_utils
@@ -143,7 +146,10 @@ def predict(width, height, confidences, boxes, prob_threshold, iou_threshold=0.5
 
 onnx_path = os.path.join(os.path.dirname(__file__), 'Model', 'ultra_light_640.onnx')
 onnx_model = onnx.load(onnx_path)
+<<<<<<< HEAD
 predictor = prepare(onnx_model)
+=======
+>>>>>>> EduVids-Completing
 ort_session = ort.InferenceSession(onnx_path)
 input_name = ort_session.get_inputs()[0].name
 

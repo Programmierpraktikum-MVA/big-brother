@@ -4,6 +4,12 @@ __pycache__
 .vim
 .gitconfig
 .vscode
+<<<<<<< HEAD
 .env
+=======
+.vs
+.env
+venv
+>>>>>>> EduVids-Completing
 config.json
 processed_video_ids.json

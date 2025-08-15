@@ -1,5 +1,9 @@
 {% extends "base.html" %}
+<<<<<<< HEAD
 {% block title %}Gesture Recognition{% endblock %}
+=======
+{% block title %}Gesture Recognition Text Input{% endblock %}
+>>>>>>> EduVids-Completing
 {% block head %}
     {{ super() }}
 {% endblock %}
@@ -10,6 +14,7 @@
 
 {% block content %}
     <div id="container">
+<<<<<<< HEAD
         <center>
             <table cellspacing="0" cellpadding="0" class="table_report_line">
                 <tbody>
@@ -34,12 +39,37 @@
                 </tbody>
             </table>
         </center>
+=======
+        <table cellspacing="0" cellpadding="0" class="table_report_line">
+            <tbody>
+                <tr>
+                    <td>Your Webcam</td>
+                    <td>Gesture recognition</td>
+                </tr>
+                <tr>
+                    <td>
+                        <canvas id="originalWebcamCanvas" hidden></canvas>
+                        <video autoplay="true" id="videoElement" playsinline></video>
+                    </td>
+                    <td>
+                        <div id="actionsContainer">
+                            <h3>Actions:</h3>
+                            <div id="actionList"></div>
+                            <textarea id="textField" rows="4" cols="50"></textarea>
+                        </div>
+                        <canvas id="gestureCanvas"></canvas>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+>>>>>>> EduVids-Completing
     </div>
 {% endblock %}
 
 {% block js %}
     {{ super() }}
     <script src="{{ url_for('static', filename='js/gestureRecognition_text.js') }}"></script>
+<<<<<<< HEAD
     <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
     <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g=" crossorigin="anonymous"></script>
     <script>
@@ -56,6 +86,42 @@
                 selectAction(data.gesture);
                 actionSelected = true;
             }
+=======
+    <script type="text/javascript" src="https://cdn.socket.io/4.7.5/socket.io.min.js" integrity="sha384-2huaZvOR9iDzHqslqwpR87isEmrfxqyWOF7hr7BY6KG0+hVKLoEXMPUJw3ynWuhO" crossorigin="anonymous"></script>
+    <script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha256-k2WSCIexGzOj3Euiig+TlR8gA0EmPjuc79OEeY5L45g=" crossorigin="anonymous"></script>
+    <script>
+        var textSocket = io.connect('http://' + document.domain + ':' + location.port + '/gesture_recognition_text');
+        var currentActions = [];
+        var actionSelected = false;
+
+        textSocket.on('ack_gesture_recognition_text', function(data) {
+            if (data && data.actions && data.actions.length > 0) {
+                currentActions = data.actions;
+                if (data.gesture) {
+                    updateActionsList(data.gesture);
+                }
+                actionSelected = false;
+            } else if (data && data.gesture && ["one", "peace", "three", "four", "highfive"].includes(data.gesture) && !actionSelected) {
+                selectAction(data.gesture);
+                actionSelected = true;
+            }
+
+            if (data && data.image) {
+                const gestureCanvas = document.querySelector("#gestureCanvas");
+                const video = document.querySelector("video");
+                if (gestureCanvas && video && video.videoWidth > 0 && video.videoHeight > 0) {
+                    gestureCanvas.width = video.videoWidth;
+                    gestureCanvas.height = video.videoHeight;
+                    var ctx = gestureCanvas.getContext("2d");
+                    var img = new Image;
+                    img.onload = function(){
+                        ctx.clearRect(0, 0, gestureCanvas.width, gestureCanvas.height);
+                        ctx.drawImage(img, 0, 0, gestureCanvas.width, gestureCanvas.height);
+                    };
+                    img.src = data.image;
+                }
+            }
+>>>>>>> EduVids-Completing
         });
 
         function updateActionsList(gesture) {
@@ -69,7 +135,11 @@
 
         function selectAction(gestureName) {
             var index = ["one", "peace", "three", "four", "highfive"].indexOf(gestureName);
+<<<<<<< HEAD
             if (index < currentActions.length) {
+=======
+            if (index !== -1 && index < currentActions.length) {
+>>>>>>> EduVids-Completing
                 var action = currentActions[index];
                 executeAction(action);
             }
@@ -80,19 +150,39 @@
             var currentText = textField.val();
             if (action === "Delete 1") {
                 var words = currentText.trim().split(' ');
+<<<<<<< HEAD
                 words.pop();
                 textField.val(words.join(' '));
             } else if (action === "Delete All") {
                 textField.val('');
             } else {
                 textField.val(currentText + ' ' + action);
+=======
+                if (words.length > 0 && words[0] !== '') {
+                    words.pop();
+                    textField.val(words.join(' '));
+                } else {
+                     textField.val('');
+                }
+            } else if (action === "Delete All") {
+                textField.val('');
+            } else {
+                if (currentText.length > 0 && currentText.slice(-1) !== ' ') {
+                    textField.val(currentText + ' ' + action);
+                } else {
+                    textField.val(currentText + action);
+                }
+>>>>>>> EduVids-Completing
             }
         }
 
         $(document).ready(function() {
             const video = document.querySelector("#videoElement");
             const originalWebcamCanvas = document.querySelector("#originalWebcamCanvas");
+<<<<<<< HEAD
             const gestureCanvas = document.querySelector("#gestureCanvas");
+=======
+>>>>>>> EduVids-Completing
 
             navigator.mediaDevices.getUserMedia({ audio: false, video: true })
                 .then(stream => {
@@ -101,6 +191,7 @@
                 .catch(error => console.error("Error accessing webcam: ", error));
 
             video.addEventListener('play', function() {
+<<<<<<< HEAD
                 originalWebcamCanvas.width = video.videoWidth;
                 originalWebcamCanvas.height = video.videoHeight;
                 gestureCanvas.width = video.videoWidth;
@@ -121,6 +212,26 @@
                     ctx.drawImage(img, 0, 0, gestureCanvas.width, gestureCanvas.height);
                 };
                 img.src = data.image;
+=======
+                function setupInterval() {
+                    if (video.videoWidth > 0 && video.videoHeight > 0) {
+                        originalWebcamCanvas.width = video.videoWidth;
+                        originalWebcamCanvas.height = video.videoHeight;
+
+                        setInterval(function() {
+                            if (video.readyState >= video.HAVE_CURRENT_DATA) {
+                                originalWebcamCanvas.getContext('2d').drawImage(video, 0, 0, originalWebcamCanvas.width, originalWebcamCanvas.height);
+                                var dataURL = originalWebcamCanvas.toDataURL("image/jpeg");
+                                textSocket.emit("gesture_recognition_text", { image: dataURL });
+                            }
+                        }, 700);
+                    } else {
+                        console.warn("Video dimensions not yet available on play event. Retrying soon...");
+                        setTimeout(setupInterval, 100);
+                    }
+                }
+                setupInterval();
+>>>>>>> EduVids-Completing
             });
         });
     </script>

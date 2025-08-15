@@ -45,7 +45,12 @@ blueprint_login = Blueprint("blueprint_login", __name__)
 @login_manager.user_loader
 def load_user(user_id):
     loaded_user = user_manager.get_user_by_id(user_id)
+<<<<<<< HEAD
     loaded_user.sync()
+=======
+    if loaded_user is not None:
+        loaded_user.sync()
+>>>>>>> EduVids-Completing
     return loaded_user
 
 

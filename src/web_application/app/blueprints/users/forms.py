@@ -1,6 +1,10 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired
+<<<<<<< HEAD
 from wtforms import TextField, SubmitField
+=======
+from wtforms import StringField, SubmitField
+>>>>>>> EduVids-Completing
 from wtforms.validators import DataRequired, StopValidation
 
 from app import picture_database
@@ -27,7 +31,11 @@ class UsernameDoesNotExistsInDatabase(object):
 
 
 class CameraSignUpForm(FlaskForm):
+<<<<<<< HEAD
     name = TextField(
+=======
+    name = StringField(
+>>>>>>> EduVids-Completing
         "Name:", validators=[
             DataRequired(),
             UsernameDoesNotExistsInDatabase(),
@@ -36,7 +44,11 @@ class CameraSignUpForm(FlaskForm):
 
 
 class SignUpForm(FlaskForm):
+<<<<<<< HEAD
     name = TextField(
+=======
+    name = StringField(
+>>>>>>> EduVids-Completing
         "Name:",
         validators=[
             DataRequired(),

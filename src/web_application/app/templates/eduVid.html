@@ -3,12 +3,15 @@
 {% block head %}
     {{ super() }}
     <style>
+<<<<<<< HEAD
         .card {
             cursor: pointer;
         }
         .video-script {
             display: none;
         }
+=======
+>>>>>>> EduVids-Completing
         .title-section {
             display: flex;
             align-items: center;
@@ -16,6 +19,7 @@
         .title-section img {
             margin-right: 15px;
         }
+<<<<<<< HEAD
         .spinner-border {
             display: none;
         }
@@ -28,6 +32,14 @@
         .error-message {
             color: red;
             margin-top: 10px;
+=======
+        .query-answer {
+            margin-top: 20px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 5px;
+            border-left: 4px solid #007bff;
+>>>>>>> EduVids-Completing
         }
     </style>
 {% endblock %}
@@ -40,6 +52,7 @@
     <div class="container mt-5">
         <div class="title-section mb-4">
             <img src="/static/img/BigBrotherIcon.jpg" alt="Big Brother Icon" width="50" height="50">
+<<<<<<< HEAD
             <h1>Search Educational Videos - with BigBrother</h1>
         </div>
         <form id="search-form">
@@ -60,11 +73,37 @@
             <h2 class="mb-4 toggle-section" id="toggle-courses">Available Courses</h2>
             <div id="courses"></div>
         </div>
+=======
+            <h1>Test-Llama-3</h1>
+        </div>
+        <form method="post" enctype="multipart/form-data">
+            {{ form.hidden_tag() }}
+            <div class="form-group">
+                {{ form.query(class="form-control", placeholder="Enter your query") }}
+            </div>
+            <div class="form-group">
+                {{ form.file(class="form-control") }}
+            </div>
+            {{ form.submit(class="btn btn-primary") }}
+            <div class="result">
+                <h2>Your result is:</h2>
+            </div>
+            {% if answer_text %}
+                <div class="query-answer">{{ answer_text }}</div>
+            {% endif %}
+            {% if answer_link %}
+                <div class="query-answer">
+                    <iframe src="{{ url_for('static', filename=answer_link) }}" width="600" height="400" style="border:none;"></iframe>
+                </div>
+            {% endif %}
+        </form>
+>>>>>>> EduVids-Completing
     </div>
 {% endblock %}
 
 {% block js %}
     {{ super() }}
+<<<<<<< HEAD
     <script>
         $(document).ready(function(){
             // Fetch and display available courses
@@ -144,4 +183,6 @@
             });
         });
     </script>
+=======
+>>>>>>> EduVids-Completing
 {% endblock %}

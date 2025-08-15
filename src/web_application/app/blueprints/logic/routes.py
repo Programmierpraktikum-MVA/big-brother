@@ -2,6 +2,10 @@ import os
 import sys
 import io
 import json
+<<<<<<< HEAD
+=======
+import importlib.util
+>>>>>>> EduVids-Completing
 from datetime import datetime, timedelta
 
 from flask import (render_template, request, Blueprint, url_for, send_from_directory, redirect, Response, jsonify)
@@ -21,6 +25,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "gesture_recognition/user_scripts"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid"))
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid/vector_search"))
+<<<<<<< HEAD
+=======
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid/ocr_mistral"))
+# Add src directory to path for proper package imports
+sys.path.append(os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", ".."))
+>>>>>>> EduVids-Completing
 available_courses_json = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid", "scrapers", "video_scrapers", "available_courses.json")
 configure_json = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..", "eduVid", "config.json")
 
@@ -28,7 +38,13 @@ from app.blueprints.logic.forms import VideoUploadForm, QueryForm
 from app import application, socketio
 
 from gesture_recognizer import GestureRecognizer
+<<<<<<< HEAD
 import question_answering.qa_algo_core as qa
+=======
+# import question_answering.qa_algo_core as qa  # DISABLED - Llama 4 nicht mehr laden
+
+import Graphing.Graphing as gr
+>>>>>>> EduVids-Completing
 
 from base_database import BaseDatabase
 from lua_sandbox_runner import run_lua_in_sandbox
@@ -303,10 +319,125 @@ def old_eduVid():
     return render_template("eduVid_old.html", form=form)
 
 
+<<<<<<< HEAD
 @logic.route("/eduVid", methods=["GET", "POST"])
 @flask_login.login_required
 def eduVid():
     return render_template("eduVid.html")
+=======
+@logic.route("/eduVid_old_llama", methods=["GET", "POST"])
+@flask_login.login_required
+def eduVid_old_llama():
+    """
+    OLD IMPLEMENTATION - NOT USED
+    Diese Funktion nutzte Llama 4 für Text-zu-Text Generation.
+    Wurde ersetzt durch neue OCR + Mistral Implementierung.
+    """
+    form = QueryForm()
+    if form.validate_on_submit():
+        user_input = form.query.data
+        uploaded_file = form.file.data
+        if user_input:
+            # Folgende Methode nutzt Llama um eine Antwort zu generieren, gerne anpassen
+            answer = qa.TextToText.answerWithLlama(user_input)
+            print(answer)
+            content = answer.get("content", "")
+            return render_template("eduVid.html", form=form, answer_text=content)
+        if uploaded_file:
+            #answer = Platzhalter für Funktion, welche die Datei verarbeitet und JSON Zurückgibt, json kommt dann zwei zeilen drunter in "json_data"
+            static_folder = os.path.join(application.root_path, "static")
+            answer= gr.create_graph_html_from_json(json_data, static_folder)
+            print(answer)
+            #Wenn zusätzlich Text zurückgegeben werden soll, einfach im return answer_text= blabla ändern
+            return render_template("eduVid.html", form=form, answer_link=answer)
+    return render_template("eduVid.html", form=form)
+
+
+@logic.route("/eduVid", methods=["GET", "POST"])
+@flask_login.login_required
+def eduVid():
+    """
+    Verarbeitet hochgeladene PDFs oder Bilder mit OCR und zeigt extrahierten Text an.
+    """
+    import os
+    import importlib.util
+    import tempfile
+
+    form = QueryForm()
+    if form.validate_on_submit():
+        user_input = form.query.data
+        uploaded_file = form.file.data
+
+        if uploaded_file:
+            try:
+                print("DEBUG: Datei hochgeladen, starte OCR...")
+
+                # Dateiendung ermitteln
+                filename = uploaded_file.filename
+                ext = os.path.splitext(filename)[1].lower()
+
+                # Datei temporär speichern
+                with tempfile.NamedTemporaryFile(delete=False, suffix=ext) as tmp_file:
+                    tmp_file.write(uploaded_file.read())
+                    tmp_path = tmp_file.name
+
+                print(f"DEBUG: Temporäre Datei gespeichert unter {tmp_path}")
+
+              
+                current_dir = os.path.abspath(os.path.dirname(__file__))
+                ocr_file_path = os.path.normpath(os.path.join(
+                    current_dir, "..", "..", "..", "..", "eduVid", "ocr_mistral", "ocr_text_recognition.py"
+                ))
+
+                # OCR-Modul importieren
+                ocr_module_spec = importlib.util.spec_from_file_location("ocr_text_recognition", ocr_file_path)
+                ocr_module = importlib.util.module_from_spec(ocr_module_spec)
+                ocr_module_spec.loader.exec_module(ocr_module)
+
+                # PDF oder Bild unterscheiden
+                if ext == ".pdf":
+                    with tempfile.TemporaryDirectory() as tmp_output:
+                        text_list = ocr_module.extract_text_from_pdf(tmp_path, tmp_output)
+                        response_text = "\n\n".join(text_list)
+                elif ext in [".jpg", ".jpeg", ".png"]:
+                    response_text = ocr_module.extract_text_from_image(tmp_path)
+                else:
+                    response_text = f"Nicht unterstützter Dateityp: {ext}"
+
+                print(f"DEBUG: OCR Ergebnis:\n{response_text}")
+
+                # Direkte Imports verwenden statt dynamische Imports
+                import sys
+                import os
+                
+                # Füge src-Verzeichnis zu sys.path hinzu für korrekte Paket-Imports
+                src_path = os.path.join(os.path.dirname(__file__), "..", "..", "..", "..")
+                if src_path not in sys.path:
+                    sys.path.insert(0, src_path)
+                
+                from src.eduVid.ocr_mistral import mistral_nextslide_text as mistral_module
+                from src.eduVid.ocr_mistral import ocr_json_graph as json_module
+
+                # Erstellt nächste Slide - KORRIGIERT: Übergebe response_text als Argument
+                next_slide_text = mistral_module.generate_next_slide(response_text)
+
+                # JSON Erstellen
+                print(f"DEBUG: Calling generate_json with text: {next_slide_text[:100]}...")
+                json_output = json_module.generate_json(next_slide_text)
+                print(f"DEBUG: generate_json returned: {json_output[:500]}...")
+
+                return render_template("eduVid.html", form=form, answer_text=next_slide_text+"\n\n=== JSON OUTPUT ===\n"+json_output)
+
+            except Exception as e:
+                error_msg = f"Fehler bei der JSON-Verarbeitung: {str(e)}"
+                print(error_msg)
+                return render_template("eduVid.html", form=form, answer_text=error_msg)
+
+        elif user_input:
+            return render_template("eduVid.html", form=form, answer_text=f"Du hast eingegeben: {user_input}")
+
+    return render_template("eduVid.html", form=form)
+>>>>>>> EduVids-Completing
 
 
 @logic.route('/search', methods=['POST'])
